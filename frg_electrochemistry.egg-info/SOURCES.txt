@@ -1,0 +1,15 @@
+LICENSE
+README.md
+setup.py
+frg-electrochemistry/CA.py
+frg-electrochemistry/CV.py
+frg-electrochemistry/OSC.py
+frg-electrochemistry/PEIS.py
+frg-electrochemistry/ReadDataFiles.py
+frg-electrochemistry/__init__.py
+frg-electrochemistry/makeWaveform.py
+frg_electrochemistry.egg-info/PKG-INFO
+frg_electrochemistry.egg-info/SOURCES.txt
+frg_electrochemistry.egg-info/dependency_links.txt
+frg_electrochemistry.egg-info/requires.txt
+frg_electrochemistry.egg-info/top_level.txt

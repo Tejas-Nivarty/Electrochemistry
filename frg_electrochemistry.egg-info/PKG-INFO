@@ -1,0 +1,19 @@
+Metadata-Version: 2.1
+Name: frg-electrochemistry
+Version: 0.0.1
+Summary: Tools for analyzing electrochemistry data.
+Home-page: https://github.com/Tejas-Nivarty/Electrochemistry
+Author: Tejas Nivarty
+Author-email: tnivarty@ucsd.edu
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.11.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: impedance
+Requires-Dist: scipy
+Requires-Dist: numpy
+Requires-Dist: matplotlib
+
+Tools for analyzing electrochemistry data in the Fenning Research Group at the University of California, San Diego. This is probably too esoteric for general use but maybe I will change that in the future. If you're interested, please message me.
