@@ -1,0 +1,1 @@
+Tools for analyzing electrochemistry data in the Fenning Research Group at the University of California, San Diego. This is probably too esoteric for general use but maybe I will change that in the future. If you're interested, please message me.

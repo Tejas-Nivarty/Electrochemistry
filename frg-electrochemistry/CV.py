@@ -31,7 +31,7 @@ def plotCompareCV(dataList,legendList,title,cycleList=None,horizontalLine=False,
         ax.axvline(0,color='k')
     for i in range(numFiles):
         data = dataList[i]
-        color = colorFader('red','blue',i/numFiles)
+        color = colorFader('blue','red',i/numFiles)
         numCycles = int(data['cycle number'].max())
         if cycleList == None:
             if numCycles == 1:
@@ -41,12 +41,20 @@ def plotCompareCV(dataList,legendList,title,cycleList=None,horizontalLine=False,
         else:
             cycle = cycleList[i]
         dataSlice = data[data['cycle number'] == cycle]
-        ax.plot(dataSlice['Ewe/mV'],dataSlice['j/mA*cm-2'],color = color,label = legendList[i])
+        if legendList == None:
+            ax.plot(dataSlice['Ewe/mV'],dataSlice['j/mA*cm-2'],color = color)
+        else:
+            ax.plot(dataSlice['Ewe/mV'],dataSlice['j/mA*cm-2'],color = color,label = legendList[i])
         
     ax.set(title = title,
            xlabel = r'$mV_{RHE}$',
            ylabel = r'j $(\frac{mA}{cm^2_{geo}})$')
-    ax.legend()
+    if legendList != None:
+        ax.legend()
+    if ylim:
+        ax.set(ylim=ylim)
+    if xlim:
+        ax.set(xlim=xlim)
 
     plt.show()
     return
@@ -193,4 +201,3 @@ def buildEDLCList(folderName,number,pH,area,referencePotential,excludeLastX=0):
 # plotCompareCV([pre,post],['Pre-','Post-'],'20 nm SRO Underlayer Ar Purged',
 #               horizontalLine=True,
 #               verticalLine=True)
-
