@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from impedance.models.circuits import CustomCircuit
 from impedance.preprocessing import cropFrequencies, ignoreBelowX
+import os
 
 def plotOneBode(data,title):
     """Takes dataframe from readPEISPandas. May rewrite in the future to accept f, Z values.
@@ -154,6 +155,38 @@ def plotCircuitProperties(circuitList):
     
     return
 
+def convertToPyDRTTools(filename:str,freqRange: list[float]):
+    
+    data = readPEISPandas(filename)
+    data['Im(Z)/Ohm'] = -data['-Im(Z)/Ohm']   
+    data = data[(data['freq/Hz'] > freqRange[0]) & (data['freq/Hz'] < freqRange[1])] 
+    data.to_csv(filename[:-4]+'.csv',
+                sep=',',
+                index=False,
+                header=False,
+                columns=['freq/Hz','Re(Z)/Ohm','Im(Z)/Ohm'])
+    
+    return
+
+def processFolder(foldername: str, freqRange):
+    #written by chatGPT
+    peis_files = []
+
+    # Walk through the folder and its subdirectories
+    for root, dirs, files in os.walk(foldername):
+        for file in files:
+            if file.endswith('.txt'):
+                filepath = os.path.join(root, file)
+                try:
+                    # Open and read the file, and search for 'PEIS'
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        if 'PEIS' in f.read():
+                            peis_files.append(filepath)
+                except Exception as e:
+                    print(f"Error reading {filepath}: {e}")
+
+    return peis_files
+
 # circuitList = plotCompareNyquist([r'Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
 #                                   r'Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
 #                                   r'Data_Files\2024-08-01-TN-01-051\5_PEIS_HER_02_PEIS_C01.txt',
@@ -175,25 +208,27 @@ def plotCircuitProperties(circuitList):
 #                                 initialGuess=[250,50e-6,1,9])
 # plotCircuitProperties(circuitList)
 
-circuitList = plotCompareNyquist([r'Data_Files\2024-06-18-TN-01-044\4_PEIS_HER_C02.txt',
-                                  r'Data_Files\2024-06-18-TN-01-044\14_PEIS_HER_02_PEIS_C02.txt',
-                                  #r'Joana Data\2024-07-09-JD-01-008\7_PEIS_HER_02_PEIS_C01.txt',
-                                  #r'Joana Data\2024-07-09-JD-01-008\17_PEIS_HER_02_PEIS_C01.txt',
-                                  r'Joana Data\2024-07-12-JD-01-009\5_PEIS_HER_02_PEIS_C01.txt',
-                                  r'Joana Data\2024-07-12-JD-01-009\15_PEIS_HER_02_PEIS_C01.txt',
-                                  r'Joana Data\2024-07-18-JD-01-010\5_PEIS_HER_02_PEIS_C01.txt',
-                                  r'Joana Data\2024-07-18-JD-01-010\10_PEIS_HER_02_PEIS_C01.txt',
-                                  r'Joana Data\2024-07-23-JD-01-010\5_PEIS_HER_02_PEIS_C01.txt',
-                                  r'Joana Data\2024-07-24-JD-01-011\7_PEIS_HER_02_PEIS_C01.txt',
-                                  r'Joana Data\2024-07-24-JD-01-011\13_PEIS_HER_02_PEIS_C01.txt',
-                                  r'Joana Data\2024-07-29-JD-01-011-mrb230410Cii\5_PEIS_HER_02_PEIS_C01.txt',
-                                  r'Joana Data\2024-07-30-JD-01-011\5_PEIS_HER_02_PEIS_C01.txt',
-                                  r'Joana Data\2024-07-30-JD-01-011\14_PEIS_HER_02_PEIS_C01.txt',
-                                 ],
-                                'Degradation of Matt\'s 2nd Sample',
-                                [2,200000],
-                                fitModel=True,
-                                circuitString='p(R1,CPE1)-R0',
-                                bounds = ([500,0,0,12],[8000,1000e-6,1,70]),
-                                initialGuess=[1000,50e-6,1,16])
-plotCircuitProperties(circuitList)
+# circuitList = plotCompareNyquist([r'Data_Files\2024-06-18-TN-01-044\4_PEIS_HER_C02.txt',
+#                                   r'Data_Files\2024-06-18-TN-01-044\14_PEIS_HER_02_PEIS_C02.txt',
+#                                   #r'Joana Data\2024-07-09-JD-01-008\7_PEIS_HER_02_PEIS_C01.txt',
+#                                   #r'Joana Data\2024-07-09-JD-01-008\17_PEIS_HER_02_PEIS_C01.txt',
+#                                   r'Joana Data\2024-07-12-JD-01-009\5_PEIS_HER_02_PEIS_C01.txt',
+#                                   r'Joana Data\2024-07-12-JD-01-009\15_PEIS_HER_02_PEIS_C01.txt',
+#                                   r'Joana Data\2024-07-18-JD-01-010\5_PEIS_HER_02_PEIS_C01.txt',
+#                                   r'Joana Data\2024-07-18-JD-01-010\10_PEIS_HER_02_PEIS_C01.txt',
+#                                   r'Joana Data\2024-07-23-JD-01-010\5_PEIS_HER_02_PEIS_C01.txt',
+#                                   r'Joana Data\2024-07-24-JD-01-011\7_PEIS_HER_02_PEIS_C01.txt',
+#                                   r'Joana Data\2024-07-24-JD-01-011\13_PEIS_HER_02_PEIS_C01.txt',
+#                                   r'Joana Data\2024-07-29-JD-01-011-mrb230410Cii\5_PEIS_HER_02_PEIS_C01.txt',
+#                                   r'Joana Data\2024-07-30-JD-01-011\5_PEIS_HER_02_PEIS_C01.txt',
+#                                   r'Joana Data\2024-07-30-JD-01-011\14_PEIS_HER_02_PEIS_C01.txt',
+#                                  ],
+#                                 'Degradation of Matt\'s 2nd Sample',
+#                                 [2,200000],
+#                                 fitModel=True,
+#                                 circuitString='p(R1,CPE1)-R0',
+#                                 bounds = ([500,0,0,12],[8000,1000e-6,1,70]),
+#                                 initialGuess=[1000,50e-6,1,16])
+# plotCircuitProperties(circuitList)
+
+convertToPyDRTTools(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt')
