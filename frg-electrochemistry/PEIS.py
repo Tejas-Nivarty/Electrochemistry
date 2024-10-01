@@ -175,17 +175,15 @@ def processFolder(foldername: str, freqRange):
     # Walk through the folder and its subdirectories
     for root, dirs, files in os.walk(foldername):
         for file in files:
-            if file.endswith('.txt'):
+            # Check if the file name contains 'PEIS' and ends with '.txt'
+            if 'PEIS' in file and file.endswith('.txt'):
                 filepath = os.path.join(root, file)
-                try:
-                    # Open and read the file, and search for 'PEIS'
-                    with open(filepath, 'r', encoding='utf-8') as f:
-                        if 'PEIS' in f.read():
-                            peis_files.append(filepath)
-                except Exception as e:
-                    print(f"Error reading {filepath}: {e}")
+                peis_files.append(filepath)
 
-    return peis_files
+    for file in peis_files:
+        convertToPyDRTTools(file,freqRange)
+    
+    return
 
 # circuitList = plotCompareNyquist([r'Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
 #                                   r'Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
@@ -231,4 +229,4 @@ def processFolder(foldername: str, freqRange):
 #                                 initialGuess=[1000,50e-6,1,16])
 # plotCircuitProperties(circuitList)
 
-convertToPyDRTTools(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt')
+processFolder(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files',[1,7000000])
