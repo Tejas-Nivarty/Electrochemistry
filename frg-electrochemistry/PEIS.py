@@ -1,10 +1,11 @@
-from ReadDataFiles import readPEIS, colorFader, readPEISPandas
+from ReadDataFiles import readPEIS, colorFader, readPEISPandas, readDRT
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from impedance.models.circuits import CustomCircuit
 from impedance.preprocessing import cropFrequencies, ignoreBelowX
 import os
+from pyDRTtools.runs import EIS_object, simple_run
 
 def plotOneBode(data,title):
     """Takes dataframe from readPEISPandas. May rewrite in the future to accept f, Z values.
@@ -185,6 +186,44 @@ def processFolder(foldername: str, freqRange):
     
     return
 
+def plotCompareDRT(filenames,title,freqRange,legendList=None):
+    
+    numberOfPlots = len(filenames)
+    fig, ax = plt.subplots()
+    ax.set_title(title)
+    
+    for i in range(0,numberOfPlots):
+        
+        data = readPEISPandas(filenames[i])
+        data['Im(Z)/Ohm'] = -data['-Im(Z)/Ohm']   
+        data = data[(data['freq/Hz'] > freqRange[0]) & (data['freq/Hz'] < freqRange[1])] 
+        
+        data = EIS_object(data['freq/Hz'],data['Re(Z)/Ohm'],data['Im(Z)/Ohm'])
+        data = simple_run(data,
+                          rbf_type='Gaussian',
+                          data_used='Combined Re-Im Data',
+                          induct_used=1,
+                          der_used='1st order',
+                          cv_type='GCV',
+                          reg_param= 1E-3,
+                          shape_control='FWHM Coefficient',
+                          coeff=0.5)
+        
+        #data = readDRT(filenames[i])
+        color = colorFader('blue','red',i/(numberOfPlots-1))
+        
+        ax.plot(data.out_tau_vec, data.gamma,color=color)
+    
+    ax.set(ylabel = r'$\gamma$ ($\Omega$)',
+           xlabel = r'$\tau$ (s)',
+           xscale='log')
+    if legendList != None:
+        ax.set_legend(legendList)
+        
+    plt.show()
+    
+    return
+
 # circuitList = plotCompareNyquist([r'Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
 #                                   r'Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
 #                                   r'Data_Files\2024-08-01-TN-01-051\5_PEIS_HER_02_PEIS_C01.txt',
@@ -229,4 +268,19 @@ def processFolder(foldername: str, freqRange):
 #                                 initialGuess=[1000,50e-6,1,16])
 # plotCircuitProperties(circuitList)
 
-processFolder(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files',[1,7000000])
+#processFolder(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files',[3,7000000])
+
+plotCompareDRT([r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01_DRT.csv',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01_DRT.csv',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\5_PEIS_HER_02_PEIS_C01_DRT.csv',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\15_PEIS_HER_02_PEIS_C01_DRT.csv',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\6_PEIS_HER_After_Debubbling_02_PEIS_C01_DRT.csv',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01_DRT.csv',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\6_PEIS_HER_afterdebubbling_02_PEIS_C01_DRT.csv',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\16_PEIS_HER_02_PEIS_C01_DRT.csv',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-04-TN-01-054\5_PEIS_HER_02_PEIS_C01_DRT.csv',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-04-TN-01-054\15_PEIS_HER_02_PEIS_C01_DRT.csv',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-09-TN-01-055\5_PEIS_HER_C01_DRT.csv',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-09-TN-01-055\13_PEIS_HER_C01_DRT.csv'
+                                  ],
+               'DRT Evolution of N&S')
