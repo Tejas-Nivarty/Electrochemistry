@@ -198,11 +198,13 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None):
         data['Im(Z)/Ohm'] = -data['-Im(Z)/Ohm']   
         data = data[(data['freq/Hz'] > freqRange[0]) & (data['freq/Hz'] < freqRange[1])] 
         
-        data = EIS_object(data['freq/Hz'],data['Re(Z)/Ohm'],data['Im(Z)/Ohm'])
+        data = EIS_object(data['freq/Hz'].to_numpy(),
+                          data['Re(Z)/Ohm'].to_numpy(),
+                          data['Im(Z)/Ohm'].to_numpy())
         data = simple_run(data,
                           rbf_type='Gaussian',
                           data_used='Combined Re-Im Data',
-                          induct_used=1,
+                          induct_used=0,
                           der_used='1st order',
                           cv_type='GCV',
                           reg_param= 1E-3,
@@ -270,17 +272,18 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None):
 
 #processFolder(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files',[3,7000000])
 
-plotCompareDRT([r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01_DRT.csv',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01_DRT.csv',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\5_PEIS_HER_02_PEIS_C01_DRT.csv',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\15_PEIS_HER_02_PEIS_C01_DRT.csv',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\6_PEIS_HER_After_Debubbling_02_PEIS_C01_DRT.csv',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01_DRT.csv',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\6_PEIS_HER_afterdebubbling_02_PEIS_C01_DRT.csv',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\16_PEIS_HER_02_PEIS_C01_DRT.csv',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-04-TN-01-054\5_PEIS_HER_02_PEIS_C01_DRT.csv',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-04-TN-01-054\15_PEIS_HER_02_PEIS_C01_DRT.csv',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-09-TN-01-055\5_PEIS_HER_C01_DRT.csv',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-09-TN-01-055\13_PEIS_HER_C01_DRT.csv'
+plotCompareDRT([r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\5_PEIS_HER_02_PEIS_C01.txt',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\15_PEIS_HER_02_PEIS_C01.txt',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\6_PEIS_HER_After_Debubbling_02_PEIS_C01.txt',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\6_PEIS_HER_afterdebubbling_02_PEIS_C01.txt',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\16_PEIS_HER_02_PEIS_C01.txt',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-04-TN-01-054\5_PEIS_HER_02_PEIS_C01.txt',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-04-TN-01-054\15_PEIS_HER_02_PEIS_C01.txt',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-09-TN-01-055\5_PEIS_HER_C01.txt',
+                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-09-TN-01-055\13_PEIS_HER_C01.txt'
                                   ],
-               'DRT Evolution of N&S')
+               'DRT Evolution of N&S',
+               [3,7000000])
