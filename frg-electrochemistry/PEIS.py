@@ -1,4 +1,4 @@
-from ReadDataFiles import readPEIS, colorFader, readPEISPandas, readDRT
+from ReadDataFiles import readPEIS, colorFader, readPEISPandas, readRawWaveform
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -6,6 +6,8 @@ from impedance.models.circuits import CustomCircuit
 from impedance.preprocessing import cropFrequencies, ignoreBelowX
 import os
 from pyDRTtools.runs import EIS_object, simple_run
+from scipy.fft import irfft, rfftfreq, rfft, ifft
+from OSC import plotWaveform
 
 def plotOneBode(data,title):
     """Takes dataframe from readPEISPandas. May rewrite in the future to accept f, Z values.
@@ -206,24 +208,67 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None):
                           data_used='Combined Re-Im Data',
                           induct_used=0,
                           der_used='1st order',
-                          cv_type='GCV',
-                          reg_param= 1E-3,
+                          cv_type='LC',
+                          reg_param= 1E-4,
                           shape_control='FWHM Coefficient',
-                          coeff=0.5)
+                          coeff=0.1)
         
         #data = readDRT(filenames[i])
         color = colorFader('blue','red',i/(numberOfPlots-1))
-        
-        ax.plot(data.out_tau_vec, data.gamma,color=color)
+        freq = 1 / data.out_tau_vec
+        ax.plot(freq, data.gamma,color=color)
     
     ax.set(ylabel = r'$\gamma$ ($\Omega$)',
-           xlabel = r'$\tau$ (s)',
+           xlabel = r'Frequency (Hz)',
            xscale='log')
     if legendList != None:
         ax.set_legend(legendList)
         
     plt.show()
     
+    return
+
+def predictCurrent(peisFilename,rawWaveformFilename):
+    
+    #use only seconds and hertz for units to work out
+    peisData = readPEISPandas(peisFilename)
+    peisData = peisData.sort_values('freq/Hz')
+    voltageWaveform = readRawWaveform(rawWaveformFilename,14,0.197)
+    dataLength = voltageWaveform.shape[0]
+    
+    #finds dt, distance between time points
+    dt = voltageWaveform['Time (s)'].diff().mean()
+    
+    voltageFFT = rfft(voltageWaveform['RawVoltage (V)'].to_numpy())
+    voltageFFTFreq = rfftfreq(dataLength, dt)
+    print(len(voltageFFT),len(voltageFFTFreq))
+    currentFFT = np.zeros(voltageFFT.size,dtype=complex)
+    
+    print(peisData['freq/Hz'].min(),voltageFFTFreq.min())
+    print(peisData['freq/Hz'].max(),voltageFFTFreq.max())
+    
+    for i in range(len(voltageFFT)):
+        #need to account for negative frequencies - how to mirror peisData to deal with these?
+        #linearly interpolates peisData to find best value based on frequency
+        imagImpedance = -np.interp(voltageFFTFreq[i],peisData['freq/Hz'],peisData['-Im(Z)/Ohm'])
+        realImpedance = np.interp(voltageFFTFreq[i],peisData['freq/Hz'],peisData['Re(Z)/Ohm'])
+        impedancePhasor = complex(realImpedance,imagImpedance)
+        voltagePhasor = voltageFFT[i]
+        
+        currentFFT[i] = voltagePhasor/impedancePhasor #V/Z = I
+        
+        if i%1000 == 0:
+            print(voltageFFTFreq[i])
+            print(voltagePhasor,impedancePhasor)
+            print(currentFFT[i])
+        
+    currentSignal = irfft(currentFFT,n=dataLength)
+    
+    dataframe = pd.DataFrame({'Time (s)':voltageWaveform['Time (s)'],
+                              'Current Density (mA/cm^2)':currentSignal,
+                              'Voltage (V)':voltageWaveform['RawVoltage (V)']})
+    plotWaveform(dataframe,'title',False)
+        
     return
 
 # circuitList = plotCompareNyquist([r'Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
@@ -272,18 +317,21 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None):
 
 #processFolder(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files',[3,7000000])
 
-plotCompareDRT([r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\5_PEIS_HER_02_PEIS_C01.txt',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\15_PEIS_HER_02_PEIS_C01.txt',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\6_PEIS_HER_After_Debubbling_02_PEIS_C01.txt',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\6_PEIS_HER_afterdebubbling_02_PEIS_C01.txt',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\16_PEIS_HER_02_PEIS_C01.txt',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-04-TN-01-054\5_PEIS_HER_02_PEIS_C01.txt',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-04-TN-01-054\15_PEIS_HER_02_PEIS_C01.txt',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-09-TN-01-055\5_PEIS_HER_C01.txt',
-                                  r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-09-TN-01-055\13_PEIS_HER_C01.txt'
-                                  ],
-               'DRT Evolution of N&S',
-               [3,7000000])
+# plotCompareDRT([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
+#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\5_PEIS_HER_02_PEIS_C01.txt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\15_PEIS_HER_02_PEIS_C01.txt',
+#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\6_PEIS_HER_After_Debubbling_02_PEIS_C01.txt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt',
+#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\6_PEIS_HER_afterdebubbling_02_PEIS_C01.txt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\16_PEIS_HER_02_PEIS_C01.txt',
+#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-04-TN-01-054\5_PEIS_HER_02_PEIS_C01.txt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-04-TN-01-054\15_PEIS_HER_02_PEIS_C01.txt',
+#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-09-TN-01-055\5_PEIS_HER_C01.txt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-09-TN-01-055\13_PEIS_HER_C01.txt'
+#                 ],
+#                'DRT Evolution of N&S',
+#                [3,200000])
+
+predictCurrent(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
+               r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En04_F_n1d37_U_p5d5_D_n3d0.csv')
