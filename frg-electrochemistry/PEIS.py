@@ -7,6 +7,7 @@ from impedance.preprocessing import cropFrequencies, ignoreBelowX
 import os
 from pyDRTtools.runs import EIS_object, simple_run
 from scipy.fft import irfft, rfftfreq, rfft, ifft
+import scipy as sc
 from OSC import plotWaveform
 
 def plotOneBode(data,title):
@@ -228,7 +229,7 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None):
     
     return
 
-def predictCurrent(peisFilename,rawWaveformFilename):
+def predictCurrent(peisFilename,rawWaveformFilename,area):
     
     #use only seconds and hertz for units to work out
     peisData = readPEISPandas(peisFilename)
@@ -236,19 +237,13 @@ def predictCurrent(peisFilename,rawWaveformFilename):
     voltageWaveform = readRawWaveform(rawWaveformFilename,14,0.197)
     dataLength = voltageWaveform.shape[0]
     
-    #finds dt, distance between time points
     dt = voltageWaveform['Time (s)'].diff().mean()
     
     voltageFFT = rfft(voltageWaveform['RawVoltage (V)'].to_numpy())
     voltageFFTFreq = rfftfreq(dataLength, dt)
-    print(len(voltageFFT),len(voltageFFTFreq))
     currentFFT = np.zeros(voltageFFT.size,dtype=complex)
     
-    print(peisData['freq/Hz'].min(),voltageFFTFreq.min())
-    print(peisData['freq/Hz'].max(),voltageFFTFreq.max())
-    
     for i in range(len(voltageFFT)):
-        #need to account for negative frequencies - how to mirror peisData to deal with these?
         #linearly interpolates peisData to find best value based on frequency
         imagImpedance = -np.interp(voltageFFTFreq[i],peisData['freq/Hz'],peisData['-Im(Z)/Ohm'])
         realImpedance = np.interp(voltageFFTFreq[i],peisData['freq/Hz'],peisData['Re(Z)/Ohm'])
@@ -257,19 +252,20 @@ def predictCurrent(peisFilename,rawWaveformFilename):
         
         currentFFT[i] = voltagePhasor/impedancePhasor #V/Z = I
         
-        if i%1000 == 0:
-            print(voltageFFTFreq[i])
-            print(voltagePhasor,impedancePhasor)
-            print(currentFFT[i])
-        
     currentSignal = irfft(currentFFT,n=dataLength)
     
     dataframe = pd.DataFrame({'Time (s)':voltageWaveform['Time (s)'],
-                              'Current Density (mA/cm^2)':currentSignal,
+                              'Current (A)':currentSignal,
                               'Voltage (V)':voltageWaveform['RawVoltage (V)']})
-    plotWaveform(dataframe,'title',False)
+    chargeArray = sc.integrate.cumulative_trapezoid(dataframe['Current (A)'],
+                                                    x = dataframe['Time (s)'])
+    chargeArray = np.insert(chargeArray,0,0)
+    dataframe['Charge (C)'] = pd.Series(chargeArray)
+    dataframe['Time (ms)'] = dataframe['Time (s)'] * 1000
+    dataframe['Current Density (mA/cm^2)'] = dataframe['Current (A)']*1000/area
+    dataframe['Charge Density (mC/cm^2)'] = dataframe['Charge (C)']*1000/area
         
-    return
+    return dataframe
 
 # circuitList = plotCompareNyquist([r'Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
 #                                   r'Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
@@ -333,5 +329,6 @@ def predictCurrent(peisFilename,rawWaveformFilename):
 #                'DRT Evolution of N&S',
 #                [3,200000])
 
-predictCurrent(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
-               r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En04_F_n1d37_U_p5d5_D_n3d0.csv')
+data = predictCurrent(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
+               r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En04_F_n1d37_U_p5d5_D_n3d0.csv',
+               0.182)

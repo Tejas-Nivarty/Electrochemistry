@@ -117,13 +117,14 @@ def plotWaveform(pulse: pd.DataFrame, title: str, jv: bool, reference = pd.DataF
     fig, ax = plt.subplots()
     ax2 = ax.twinx()
     
-    ax.plot(pulse['Time (s)']*1000,pulse['Current Density (mA/cm^2)'],color='r')
+    #ax.plot(pulse['Time (s)']*1000,pulse['Current Density (mA/cm^2)'],color='r')
+    ax.plot(pulse['Time (s)']*1000,pulse['Current (A)'],color='r')
     ax2.plot(pulse['Time (s)']*1000,pulse['Voltage (V)'],color='k')
     if not reference.empty:
         ax2.plot(reference['Time (s)']*1000,reference['Voltage (V)'],color='k',linestyle='--')
     ax.set(title= title,
-           ylabel=r'Current Density $(\frac{mA}{cm^2_{geo}})$',
-           #ylabel=r'Current (A)',
+           #ylabel=r'Current Density $(\frac{mA}{cm^2_{geo}})$',
+           ylabel=r'Current (A)',
            xlabel='Time (ms)')
     ax2.set(ylabel = r'Voltage (V$_{RHE}$)')
     ax.axhline(0,color='k',zorder=0)
@@ -137,10 +138,12 @@ def plotWaveform(pulse: pd.DataFrame, title: str, jv: bool, reference = pd.DataF
         plt.axvline(6.535,color='k',linestyle='--',zorder=0)
         plt.axvline(-0.335,color='k',linestyle='--',zorder=0)
         plt.scatter(pulse['Voltage (V)'],pulse['Charge Density (mC/cm^2)'],c=(pulse['Time (s)']-pulse['Time (s)'].iloc[0])*1e6,cmap='gist_rainbow')
+        #plt.scatter(pulse['Voltage (V)'],pulse['Current (A)'],c=(pulse['Time (s)']-pulse['Time (s)'].iloc[0])*1e6,cmap='gist_rainbow')
         plt.colorbar(label=r'Time ($\mu$s)')
         plt.title(title)
         plt.xlabel(r'Voltage (V$_{RHE}$)')
         plt.ylabel(r'Charge Density $(\frac{mC}{cm^2_{geo}})$')
+        #plt.ylabel(r'Current (A)')
         plt.show()
     
     return
