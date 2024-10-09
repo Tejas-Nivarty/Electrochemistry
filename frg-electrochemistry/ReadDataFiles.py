@@ -209,7 +209,7 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
     data['Time (ms)'] *= stretch
     data = data[data['Time (ms)'] < (data['Time (ms)'].max()/stretch)]
     data['Time (s)'] = data['Time (ms)']/1000
-
+    data['RawVoltage (V)'] = data['Voltage (V)']
     data['Voltage (V)'] = data['Voltage (V)'] + referencePotential + 0.059*pH
     if irange == '1 A':
         data['Current (A)'] = data['Current (A)']
@@ -273,17 +273,22 @@ def readDRT(filename: str):
                        dtype=float)
     return data
 
-def colorFader(c1: str,c2: str,mix: float):
-    """Yields mix between c1 and c2.
+def colorFader(c1: str,c2: str,currentIndex: int, totalIndices: int):
+    """Generates color gradient for plotting.
 
     Args:
-        c1 (str): matplotlib color
-        c2 (str): matplotlib color
-        mix (float): 0-1, degree of mixture
+        c1 (str): color of first index
+        c2 (str): color of last index
+        currentIndex (int): color of first index
+        totalIndices (int): total number of indices
 
     Returns:
-        color: matplotlib mixed color, hexadecimal
+        color: matplotlib color in hex format
     """
+    if totalIndices > 1:
+        mix = currentIndex/(totalIndices-1)
+    else:
+        mix = 0
     c1=np.array(mpl.colors.to_rgb(c1))
     c2=np.array(mpl.colors.to_rgb(c2))
     return mpl.colors.to_hex((1-mix)*c1 + mix*c2)

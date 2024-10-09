@@ -108,7 +108,7 @@ def makeWaveform(pulseWidth,frequency,faradaicBias,upBias,dnBias,oldWFG):
     filename = filename.replace('+','p')
     filename = filename.replace('.','d')
     filename = filename+'.csv'
-    filename = 'Waveforms\\'+filename
+    filename = 'C:\\Users\\tejas\\Analysis\\Potentiostat\\Waveforms\\'+filename
     
     amplitude = upBias - dnBias
     offset = (upBias + dnBias) / 2

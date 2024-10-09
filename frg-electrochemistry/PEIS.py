@@ -1,4 +1,4 @@
-from ReadDataFiles import readPEIS, colorFader, readPEISPandas, readRawWaveform
+from ReadDataFiles import readPEIS, colorFader, readPEISPandas, readRawWaveform, readOSC
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -8,7 +8,7 @@ import os
 from pyDRTtools.runs import EIS_object, simple_run
 from scipy.fft import irfft, rfftfreq, rfft, ifft
 import scipy as sc
-from OSC import plotWaveform
+from OSC import plotWaveforms
 
 def plotOneBode(data,title):
     """Takes dataframe from readPEISPandas. May rewrite in the future to accept f, Z values.
@@ -72,6 +72,8 @@ def plotOneNyquist(filename,title,freqRange,fitModel=False,circuitString = None,
     ax.set(title = title + ' Nyquist Plots',
            xlabel = 'Re(Z(f)) ($\Omega$)',
            ylabel = '-Im(Z(f)) ($\Omega$)')
+    if fitModel == False:
+        circuit = None
     print(circuit)
     plt.show()
     
@@ -104,7 +106,7 @@ def plotCompareNyquist(filenames,title,freqRange,fitModel=False,circuitString=No
             zPredict = circuit.predict(f)
         
         #plots results
-        color = colorFader('blue','red',i/(numberOfPlots-1))
+        color = colorFader('blue','red',i,numberOfPlots)
         if legendList != None:
             ax.plot(Z.real,-Z.imag,'o',color=color,label=legendList[i])
         else:
@@ -163,7 +165,7 @@ def convertToPyDRTTools(filename:str,freqRange: list[float]):
     
     data = readPEISPandas(filename)
     data['Im(Z)/Ohm'] = -data['-Im(Z)/Ohm']   
-    data = data[(data['freq/Hz'] > freqRange[0]) & (data['freq/Hz'] < freqRange[1])] 
+    data = data[(data['freq/Hz'] >= freqRange[0]) & (data['freq/Hz'] <= freqRange[1])] 
     data.to_csv(filename[:-4]+'.csv',
                 sep=',',
                 index=False,
@@ -199,23 +201,21 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None):
         
         data = readPEISPandas(filenames[i])
         data['Im(Z)/Ohm'] = -data['-Im(Z)/Ohm']   
-        data = data[(data['freq/Hz'] > freqRange[0]) & (data['freq/Hz'] < freqRange[1])] 
+        data = data[(data['freq/Hz'] >= freqRange[0]) & (data['freq/Hz'] <= freqRange[1])] 
         
         data = EIS_object(data['freq/Hz'].to_numpy(),
-                          data['Re(Z)/Ohm'].to_numpy(),
-                          data['Im(Z)/Ohm'].to_numpy())
+                        data['Re(Z)/Ohm'].to_numpy(),
+                        data['Im(Z)/Ohm'].to_numpy())
         data = simple_run(data,
-                          rbf_type='Gaussian',
-                          data_used='Combined Re-Im Data',
-                          induct_used=0,
-                          der_used='1st order',
-                          cv_type='LC',
-                          reg_param= 1E-4,
-                          shape_control='FWHM Coefficient',
-                          coeff=0.1)
-        
-        #data = readDRT(filenames[i])
-        color = colorFader('blue','red',i/(numberOfPlots-1))
+                        rbf_type='Gaussian',
+                        data_used='Combined Re-Im Data',
+                        induct_used=0,
+                        der_used='1st order',
+                        cv_type='rGCV',
+                        reg_param= 1E-4,
+                        shape_control='FWHM Coefficient',
+                        coeff=0.4)
+        color = colorFader('blue','red',i,numberOfPlots)
         freq = 1 / data.out_tau_vec
         ax.plot(freq, data.gamma,color=color)
     
@@ -223,18 +223,25 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None):
            xlabel = r'Frequency (Hz)',
            xscale='log')
     if legendList != None:
-        ax.set_legend(legendList)
+        ax.legend(legendList)
         
     plt.show()
     
     return
 
-def predictCurrent(peisFilename,rawWaveformFilename,area):
+def predictCurrent(peisFilename,voltageWaveformFilename,pH,area,referencePotential):
+    
+    #sets DC offset so 0 current is HER equilibrium
+    DCOffset = referencePotential + 0.059*pH
     
     #use only seconds and hertz for units to work out
     peisData = readPEISPandas(peisFilename)
     peisData = peisData.sort_values('freq/Hz')
-    voltageWaveform = readRawWaveform(rawWaveformFilename,14,0.197)
+    if 'f_' in voltageWaveformFilename:
+        voltageWaveform = readRawWaveform(voltageWaveformFilename,pH,referencePotential)
+    else:
+        voltageWaveform = readOSC(voltageWaveformFilename,pH,area,referencePotential,'1 A')
+    voltageWaveform['RawVoltage (V)'] = voltageWaveform['RawVoltage (V)'] + DCOffset
     dataLength = voltageWaveform.shape[0]
     
     dt = voltageWaveform['Time (s)'].diff().mean()
@@ -256,7 +263,7 @@ def predictCurrent(peisFilename,rawWaveformFilename,area):
     
     dataframe = pd.DataFrame({'Time (s)':voltageWaveform['Time (s)'],
                               'Current (A)':currentSignal,
-                              'Voltage (V)':voltageWaveform['RawVoltage (V)']})
+                              'Voltage (V)':voltageWaveform['Voltage (V)']})
     chargeArray = sc.integrate.cumulative_trapezoid(dataframe['Current (A)'],
                                                     x = dataframe['Time (s)'])
     chargeArray = np.insert(chargeArray,0,0)
@@ -329,6 +336,103 @@ def predictCurrent(peisFilename,rawWaveformFilename,area):
 #                'DRT Evolution of N&S',
 #                [3,200000])
 
-data = predictCurrent(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
-               r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En04_F_n1d37_U_p5d5_D_n3d0.csv',
-               0.182)
+# initialEIS = predictCurrent(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\6_PEIS_HER_After_Debubbling_02_PEIS_C01.txt',
+#                     r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\11_100kHz_PW-6_Dynamic_CA.csv',
+#                     14,
+#                     0.182,
+#                     0.209)
+# finalEIS = predictCurrent(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt',
+#                     r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\11_100kHz_PW-6_Dynamic_CA.csv',
+#                     14,
+#                     0.182,
+#                     0.209)
+# realData = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\11_100kHz_PW-6_Dynamic_CA.csv',
+#                    14,
+#                    0.182,
+#                    0.209,
+#                    '1 A')
+# plotWaveforms([initialEIS,finalEIS,realData],'Comparison',['Initial EIS','Final EIS','Real'],True)
+
+# pwn6 = predictCurrent(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt',
+#                       r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En06_F_n1d37_U_p5d5_D_n3d0_False.csv',
+#                       14,
+#                       0.1826403875,
+#                       0.209)
+# pwn5 = predictCurrent(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt',
+#                       r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En05_F_n1d37_U_p5d5_D_n3d0_False.csv',
+#                       14,
+#                       0.1826403875,
+#                       0.209)
+# pwn4 = predictCurrent(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt',
+#                       r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En04_F_n1d37_U_p5d5_D_n3d0.csv',
+#                       14,
+#                       0.1826403875,
+#                       0.209)
+# realpwn6 = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\8_1000Hz_PW-6_Dynamic_CA.csv',
+#                    14,
+#                    0.1826403875,
+#                    0.209,
+#                    '1 A')
+# realpwn5 = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\7_1000Hz_PW-5_Dynamic_CA.csv',
+#                    14,
+#                    0.1826403875,
+#                    0.209,
+#                    '1 A')
+# realpwn4 = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\9_1000Hz_Dynamic_CA.csv',
+#                    14,
+#                    0.1826403875,
+#                    0.209,
+#                    '1 A')
+
+# plotWaveforms([pwn6,pwn5,pwn4,realpwn6,realpwn5,realpwn4],
+#               'Argon-Saturated Current Responses',
+#               ['1 us Ideal',
+#                '10 us Ideal',
+#                '100 us Ideal',
+#                '1 us Real',
+#                '10 us Real',
+#                '100 us Real'],
+#               True,
+#               customColors = ['#FF5F5F',
+#                               '#FF1E1E',
+#                               '#7A0000',
+#                               '#88B2ED',
+#                               '#4889CD',
+#                               '#183859'])
+
+plotCompareDRT([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
+                #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\6_PEIS_HER_afterdebubbling_02_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\16_PEIS_HER_02_PEIS_C01.txt',
+                #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\5_PEIS_HER_02_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\15_PEIS_HER_02_PEIS_C01.txt',
+                #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\5_PEIS_HER_02_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt'],
+               'Ar vs. N2 Distribution of Relaxation Times',
+               [1,200000],
+               ['Initial N2',
+                'Final N2',
+                'Initial Ar',
+                'Final Ar'])
+
+# plotCompareNyquist([r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Ultra-tin-SRO-BTO-SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_17_PEIS_C01.txt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-3UC-SRO-BTO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_17_PEIS_C01.txt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Thick SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-Repeat2_17_PEIS_C01.txt'],
+#                    '',
+#                [1,200000],
+#                True,
+#                circuitString='p(p(R1,CPE1),p(R2,CPE2))-R0',
+#                bounds = ([0,0,0,0,0,0,0],
+#                          [8000,1000e-6,1,8000,1000e-6,1,70]),
+#                initialGuess=[1000,50e-6,1,1000,50e-6,1,16],
+#                legendList=['1.5 UC SRO',
+#                 '3 UC SRO',
+#                 '48 UC SRO'])
+# plotCompareDRT([r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Ultra-tin-SRO-BTO-SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_17_PEIS_C01.txt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-3UC-SRO-BTO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_17_PEIS_C01.txt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Thick SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-Repeat2_17_PEIS_C01.txt'],
+#                'Comparison',
+#                [1,200000],
+#                ['1.5 UC SRO',
+#                 '3 UC SRO',
+#                 '48 UC SRO'])

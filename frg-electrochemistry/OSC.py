@@ -31,7 +31,7 @@ def plotFFT(datasets: list[tuple],legend,title):
     
     for i, data in enumerate(datasets):
         
-        color = colorFader('blue','red',i/(len(datasets)-1))
+        color = colorFader('blue','red',i,len(datasets))
         frequencies = data[0]
         magnitude = data[1]
         if maxMagnitude < max(magnitude):
@@ -148,7 +148,7 @@ def plotWaveform(pulse: pd.DataFrame, title: str, jv: bool, reference = pd.DataF
     
     return
 
-def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv: bool, reference = pd.DataFrame()):
+def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv: bool, reference = pd.DataFrame(), customColors = None):
     
     fig, ax = plt.subplots()
     ax2 = ax.twinx()
@@ -156,7 +156,10 @@ def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv:
     
     
     for i, pulse in enumerate(pulses):
-        color = colorFader('blue','red',i/(len(pulses)-1))
+        if customColors == None:
+            color = colorFader('blue','red',i,len(pulses))
+        else:
+            color = customColors[i]
         ax.plot(pulse['Time (s)']*1000,pulse['Current Density (mA/cm^2)'],color=color)
         ax2.plot(pulse['Time (s)']*1000,pulse['Voltage (V)'],color=color,linestyle=':')
         
@@ -175,8 +178,10 @@ def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv:
         fig, ax = plt.subplots()
         
         for i, pulse in enumerate(pulses):
-            
-            color = colorFader('blue','red',i/(len(pulses)-1))
+            if customColors == None:
+                color = colorFader('blue','red',i,len(pulses))
+            else:
+                color = customColors[i]
             ax.plot(pulse['Voltage (V)'],pulse['Current Density (mA/cm^2)'],color=color)
         ax.legend(legend)
         ax.set(title = title,
@@ -193,8 +198,10 @@ def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv:
         fig, ax = plt.subplots()
         
         for i, pulse in enumerate(pulses):
-            
-            color = colorFader('blue','red',i/(len(pulses)-1))
+            if customColors == None:
+                color = colorFader('blue','red',i,len(pulses))
+            else:
+                color = customColors[i]
             ax.plot(pulse['Voltage (V)'],pulse['Charge Density (mC/cm^2)'],color=color)
         ax.legend(legend)
         ax.set(title = title,
