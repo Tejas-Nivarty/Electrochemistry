@@ -211,10 +211,10 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None):
                         data_used='Combined Re-Im Data',
                         induct_used=0,
                         der_used='1st order',
-                        cv_type='rGCV',
+                        cv_type='GCV',
                         reg_param= 1E-4,
                         shape_control='FWHM Coefficient',
-                        coeff=0.4)
+                        coeff=0.3)
         color = colorFader('blue','red',i,numberOfPlots)
         freq = 1 / data.out_tau_vec
         ax.plot(freq, data.gamma,color=color)
@@ -406,8 +406,9 @@ plotCompareDRT([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN
                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\16_PEIS_HER_02_PEIS_C01.txt',
                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\5_PEIS_HER_02_PEIS_C01.txt',
                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\15_PEIS_HER_02_PEIS_C01.txt',
-                #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\5_PEIS_HER_02_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt'],
+                #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\6_PEIS_HER_After_Debubbling_02_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt'
+                ],
                'Ar vs. N2 Distribution of Relaxation Times',
                [1,200000],
                ['Initial N2',

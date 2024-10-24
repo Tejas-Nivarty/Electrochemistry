@@ -97,18 +97,19 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float): #a
     return data
 
 def readPEISPandas(filename):
-    """Reads PEIS into pandas dataframe.
+    """Reads PEIS into pandas dataframe. Works with .mpt files as well.
 
     Args:
-        filename (str): filename of PEIS .txt (must be exported using PEIS-all)
+        filename (str): filename of PEIS .txt (must be exported using PEIS-all) or PEIS .mpt
 
     Returns:
         pd.DataFrame: dataframe containing PEIS experiment
     """
-    data = pd.read_csv(filename,
-                       sep='\s+',
-                       skiprows=1,
-                       names = ['freq/Hz',
+    if filename[-3:] == 'mpt':
+        data = pd.read_csv(filename,
+                        sep='\s+',
+                        skiprows=71,
+                        names = ['freq/Hz',
                                 'Re(Z)/Ohm',
                                 '-Im(Z)/Ohm',
                                 '|Z|/Ohm',
@@ -128,10 +129,63 @@ def readPEISPandas(filename):
                                 'Im(Y)/Ohm-1',
                                 '|Y|/Ohm-1',
                                 'Phase(Y)/deg',
-                                'dq/mA.h'],
-                       index_col=False,
-                       dtype = np.float64,
-                       encoding='unicode_escape')
+                                'Re(C)/nF',
+                                'Im(C)/nF',
+                                '|C|/nF',
+                                'Phase(C)/deg',
+                                'Re(M)',
+                                'Im(M)',
+                                '|M|',
+                                'Phase(M)/deg',
+                                'Re(Permittivity)',
+                                'Im(Permittivity)',
+                                '|Permittivity|',
+                                'Phase(Permittivity)/deg',
+                                'Re(Resistivity)/Ohm',
+                                'Im(Resistivity)/Ohm.cm',
+                                '|Resistivity|/Ohm.cm',
+                                'Phase(Resistivity)/deg',
+                                'Re(Conductivity)/mS/cm',
+                                'Im(Conductivity)/mS/cm',
+                                '|Conductivity|/mS/cm',
+                                'Phase(Conductivity)/deg',
+                                'Tan(Delta)',
+                                'Loss Angle(Delta)/deg',
+                                'dq/mA.h',
+                                'x',
+                                'Pwe/W',
+                                'Rwe/Ohm'],
+                        index_col=False,
+                        dtype = np.float64,
+                        encoding='windows-1252')
+    else:
+        data = pd.read_csv(filename,
+                        sep='\s+',
+                        skiprows=1,
+                        names = ['freq/Hz',
+                                    'Re(Z)/Ohm',
+                                    '-Im(Z)/Ohm',
+                                    '|Z|/Ohm',
+                                    'Phase(Z)/deg',
+                                    'time/s',
+                                    '<Ewe>/V',
+                                    '<I>/mA',
+                                    'Cs/uF',
+                                    'Cp/uF',
+                                    'cycle number',
+                                    'I Range',
+                                    '|Ewe|/V',
+                                    '|I|/A',
+                                    'Ns',
+                                    '(Q-Qo)/mA.h',
+                                    'Re(Y)/Ohm-1',
+                                    'Im(Y)/Ohm-1',
+                                    '|Y|/Ohm-1',
+                                    'Phase(Y)/deg',
+                                    'dq/mA.h'],
+                        index_col=False,
+                        dtype = np.float64,
+                        encoding='unicode_escape')
     
     return data
 
