@@ -31,7 +31,7 @@ def plotCompareCV(dataList,legendList,title,cycleList=None,horizontalLine=False,
         ax.axvline(0,color='k')
     for i in range(numFiles):
         data = dataList[i]
-        color = colorFader('blue','red',i/numFiles)
+        color = colorFader('blue','red',i,numFiles)
         numCycles = int(data['cycle number'].max())
         if cycleList == None:
             if numCycles == 1:
@@ -175,6 +175,8 @@ def buildEDLCList(folderName,number,pH,area,referencePotential,excludeLastX=0):
             isEDLC = True
         if file[-3:] != 'txt':
             isEDLC = False
+        if 'CA' in file:
+            isEDLC = False
         if isEDLC:
             edlcFiles.append(folderName + '\\' + file)
     
@@ -182,13 +184,6 @@ def buildEDLCList(folderName,number,pH,area,referencePotential,excludeLastX=0):
         edlcFiles = edlcFiles[excludeLastX:]
 
     return buildDataList(edlcFiles,pH,area,referencePotential)
-
-# pre = buildEDLCList(r'Joana Data\2024-07-30-JD-01-011',3,14,0.1826403875,0.209,excludeLastX=1)
-# post = buildEDLCList(r'Joana Data\2024-07-30-JD-01-011',13,14,0.1826403875,0.209,excludeLastX=1)
-# plotECSA(pre,'Pre')
-# plotECSA(post,'Post')
-
-# #readCV, plotCompareCV
 
 # post = readCV(r'Data_Files\2024-06-18-TN-01-044\15_CV_02_CV_C02.txt',
 #               14,
@@ -201,3 +196,11 @@ def buildEDLCList(folderName,number,pH,area,referencePotential,excludeLastX=0):
 # plotCompareCV([pre,post],['Pre-','Post-'],'20 nm SRO Underlayer Ar Purged',
 #               horizontalLine=True,
 #               verticalLine=True)
+
+edlc = buildEDLCList(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060',
+                    15,
+                    14,
+                    0.1734377200,
+                    0.217)
+plotECSA(edlc,'After')
+

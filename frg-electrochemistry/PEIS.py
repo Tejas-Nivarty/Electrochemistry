@@ -212,15 +212,15 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None):
                         induct_used=0,
                         der_used='1st order',
                         cv_type='GCV',
-                        reg_param= 1E-4,
+                        reg_param= 1E-3, #1E-4 is good
                         shape_control='FWHM Coefficient',
-                        coeff=0.3)
+                        coeff=0.1) #0.3 is good
         color = colorFader('blue','red',i,numberOfPlots)
         freq = 1 / data.out_tau_vec
-        ax.plot(freq, data.gamma,color=color)
+        ax.plot(data.out_tau_vec, data.gamma,color=color)
     
     ax.set(ylabel = r'$\gamma$ ($\Omega$)',
-           xlabel = r'Frequency (Hz)',
+           xlabel = r'RC Time Constant (s)',
            xscale='log')
     if legendList != None:
         ax.legend(legendList)
@@ -400,21 +400,21 @@ def predictCurrent(peisFilename,voltageWaveformFilename,pH,area,referencePotenti
 #                               '#4889CD',
 #                               '#183859'])
 
-plotCompareDRT([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
-                #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\6_PEIS_HER_afterdebubbling_02_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\16_PEIS_HER_02_PEIS_C01.txt',
-                #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\5_PEIS_HER_02_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\15_PEIS_HER_02_PEIS_C01.txt',
-                #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\6_PEIS_HER_After_Debubbling_02_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt'
-                ],
-               'Ar vs. N2 Distribution of Relaxation Times',
-               [1,200000],
-               ['Initial N2',
-                'Final N2',
-                'Initial Ar',
-                'Final Ar'])
+# plotCompareDRT([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
+#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\6_PEIS_HER_afterdebubbling_02_PEIS_C01.txt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\16_PEIS_HER_02_PEIS_C01.txt',
+#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\5_PEIS_HER_02_PEIS_C01.txt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\15_PEIS_HER_02_PEIS_C01.txt',
+#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\6_PEIS_HER_After_Debubbling_02_PEIS_C01.txt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt'
+#                 ],
+#                'Ar vs. N2 Distribution of Relaxation Times',
+#                [1,200000],
+#                ['Initial N2',
+#                 'Final N2',
+#                 'Initial Ar',
+#                 'Final Ar'])
 
 # plotCompareNyquist([r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Ultra-tin-SRO-BTO-SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_17_PEIS_C01.txt',
 #                 r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-3UC-SRO-BTO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_17_PEIS_C01.txt',
@@ -437,3 +437,74 @@ plotCompareDRT([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN
 #                ['1.5 UC SRO',
 #                 '3 UC SRO',
 #                 '48 UC SRO'])
+
+# plotCompareDRT([r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\Before Cycling\GA240830-1_240902_20um_IL-LGE_BeforeCycling.mpt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\Single Cycling\GA240830-1_240902_20um_IL-LGE_1-1_SingleCycle.mpt',
+#                 r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\100 Cycles\GA240830-1_240911_LGE_p20_1_100Cycles_C01.mpt'],
+#                'DRT Comparison IL-LGE',
+#                [5,1.5E6],
+#                ['Before Cycling',
+#                 'Single Cycle',
+#                 '100 Cycles'])
+# plotCompareNyquist([r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\Before Cycling\GA240830-1_240902_20um_IL-LGE_BeforeCycling.mpt',
+#                     r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\Single Cycling\GA240830-1_240902_20um_IL-LGE_1-1_SingleCycle.mpt',
+#                     r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\100 Cycles\GA240830-1_240911_LGE_p20_1_100Cycles_C01.mpt'],
+#                    'IL-LGE',
+#                    [5,1.5E6],
+#                    legendList=['Before Cycling',
+#                                 'Single Cycle',
+#                                 '100 Cycles'],
+#                    fitModel=True,
+#                    circuitString='R1-p(C2,R2)-p(C3,R3)',
+#                    initialGuess=[7,1e-6,30,1e-6,400],
+#                    bounds=([5 ,1e-8,25 ,1e-8,20 ],
+#                            [15,1e-2,377,1e-2,500]))
+
+plotCompareDRT([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_01_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_02_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_03_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_04_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_05_PEIS_C01.txt',],
+               'Poled Down',
+               [1,2E5],
+               [#'0 $V_{RHE}$',
+                '-0.1 $V_{RHE}$',
+                '-0.2 $V_{RHE}$',
+                '-0.3 $V_{RHE}$',
+                '-0.4 $V_{RHE}$'])
+plotCompareNyquist([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_01_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_02_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_03_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_04_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_05_PEIS_C01.txt',],
+                   'Poled Down',
+                   [1,2E5],
+                   legendList=[#'0 $V_{RHE}$',
+                '-0.1 $V_{RHE}$',
+                '-0.2 $V_{RHE}$',
+                '-0.3 $V_{RHE}$',
+                '-0.4 $V_{RHE}$'])
+plotCompareDRT([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_01_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_02_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_03_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_04_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_05_PEIS_C01.txt',],
+               'Poled Up',
+               [1,2E5],
+               [#'0 $V_{RHE}$',
+                '-0.1 $V_{RHE}$',
+                '-0.2 $V_{RHE}$',
+                '-0.3 $V_{RHE}$',
+                '-0.4 $V_{RHE}$'])
+plotCompareNyquist([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_01_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_02_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_03_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_04_PEIS_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_05_PEIS_C01.txt',],
+                   'Poled Up',
+                   [1,2E5],
+                   legendList=[#'0 $V_{RHE}$',
+                '-0.1 $V_{RHE}$',
+                '-0.2 $V_{RHE}$',
+                '-0.3 $V_{RHE}$',
+                '-0.4 $V_{RHE}$'])

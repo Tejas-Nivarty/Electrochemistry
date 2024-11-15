@@ -265,7 +265,7 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
     data['Time (s)'] = data['Time (ms)']/1000
     data['RawVoltage (V)'] = data['Voltage (V)']
     data['Voltage (V)'] = data['Voltage (V)'] + referencePotential + 0.059*pH
-    if irange == '1 A':
+    if irange == '1 A' or irange == '2 A': #unsure if this is right
         data['Current (A)'] = data['Current (A)']
     elif irange == '100 mA':
         data['Current (A)'] = data['Current (A)']*0.1

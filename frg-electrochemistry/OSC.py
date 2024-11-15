@@ -215,3 +215,50 @@ def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv:
         plt.show()
     
     return
+
+booster1us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\8_Dynamic_CA_1000Hz_1us.csv',
+                     14,
+                     0.17343772,
+                     0.217,
+                     '2 A')
+booster10us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\9_Dynamic_CA_1000Hz_10us.csv',
+                     14,
+                     0.17343772,
+                     0.217,
+                     '2 A')
+booster100us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\10_Dynamic_CA_1000Hz_100us.csv',
+                     14,
+                     0.17343772,
+                     0.217,
+                     '2 A')
+nobooster1us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\8_1000Hz_PW-6_Dynamic_CA.csv',
+                       14,
+                       0.1826403875,
+                       0.209,
+                       '1 A')
+nobooster10us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\7_1000Hz_PW-5_Dynamic_CA.csv',
+                       14,
+                       0.1826403875,
+                       0.209,
+                       '1 A')
+nobooster100us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\11_1000Hz_Dynamic_CA.csv',
+                       14,
+                       0.1826403875,
+                       0.209,
+                       '1 A')
+
+# plotWaveforms([booster1us,
+#                booster10us,
+#                booster100us],
+#               'Booster Comparison',
+#               ['1 us',
+#                '10 us',
+#                '100 us'],
+#               True)
+
+plotWaveforms([booster10us,
+               nobooster10us],
+              'Booster Comparison 10 us',
+              ['Booster',
+               'No Booster'],
+              True)
