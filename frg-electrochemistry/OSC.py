@@ -4,7 +4,8 @@ import scipy as sc
 import matplotlib.pyplot as plt
 plt.rcParams['font.size'] = 12
 import matplotlib as mpl
-from ReadDataFiles import readOSC, readRawWaveform, colorFader
+from ReadDataFiles import readOSC, readRawWaveform, colorFader, calculateIntegral
+import argparse
 
 def fft(data: pd.DataFrame,dataLabel: str):
     
@@ -52,18 +53,6 @@ def plotFFT(datasets: list[tuple],legend,title):
     plt.show()
     
     return
-
-def calculateIntegral(timeSeries,valueSeries,baseline,timeBounds):
-    
-    #truncates timeSeries and valueSeries according to timeBounds
-    timeSeries = timeSeries[(timeSeries >= timeBounds[0]) & (timeSeries <= timeBounds[1])]
-    valueSeries = valueSeries.loc[timeSeries.first_valid_index():timeSeries.last_valid_index()]
-    
-    #subtracts baseline from valueSeries
-    valueSeries = valueSeries - baseline
-    
-    #integrates
-    return sc.integrate.trapezoid(y=valueSeries,x=timeSeries)
 
 def analyzeWaveform(pulse: pd.DataFrame, experimentLength: float, frequency: float, title: str):
     
@@ -216,36 +205,58 @@ def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv:
     
     return
 
-booster1us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\8_Dynamic_CA_1000Hz_1us.csv',
-                     14,
-                     0.17343772,
-                     0.217,
-                     '2 A')
-booster10us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\9_Dynamic_CA_1000Hz_10us.csv',
-                     14,
-                     0.17343772,
-                     0.217,
-                     '2 A')
-booster100us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\10_Dynamic_CA_1000Hz_100us.csv',
-                     14,
-                     0.17343772,
-                     0.217,
-                     '2 A')
-nobooster1us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\8_1000Hz_PW-6_Dynamic_CA.csv',
-                       14,
-                       0.1826403875,
-                       0.209,
-                       '1 A')
-nobooster10us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\7_1000Hz_PW-5_Dynamic_CA.csv',
-                       14,
-                       0.1826403875,
-                       0.209,
-                       '1 A')
-nobooster100us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\11_1000Hz_Dynamic_CA.csv',
-                       14,
-                       0.1826403875,
-                       0.209,
-                       '1 A')
+# booster1us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\8_Dynamic_CA_1000Hz_1us.csv',
+#                      14,
+#                      0.17343772,
+#                      0.217,
+#                      '2 A')
+# booster10us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\9_Dynamic_CA_1000Hz_10us.csv',
+#                      14,
+#                      0.17343772,
+#                      0.217,
+#                      '2 A')
+# booster100us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\10_Dynamic_CA_1000Hz_100us.csv',
+#                      14,
+#                      0.17343772,
+#                      0.217,
+#                      '2 A')
+# nobooster1us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\8_1000Hz_PW-6_Dynamic_CA.csv',
+#                        14,
+#                        0.1826403875,
+#                        0.209,
+#                        '1 A')
+# nobooster10us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\7_1000Hz_PW-5_Dynamic_CA.csv',
+#                        14,
+#                        0.1826403875,
+#                        0.209,
+#                        '1 A')
+# nobooster100us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\11_1000Hz_Dynamic_CA.csv',
+#                        14,
+#                        0.1826403875,
+#                        0.209,
+#                        '1 A')
+# booster20us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\11_Dynamic_CA_1000Hz_20us.csv',
+#                       14,
+#                       0.17343772,
+#                       0.217,
+#                       '2 A')
+# booster20usBetterCable = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\12_Dynamic_CA_1000Hz_20us_newboostercable.csv',
+#                                 14,
+#                                 0.17343772,
+#                                 0.217,
+#                                 '2 A')
+# reference20us = readRawWaveform(r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_2d000En05_F_n1d378_U_p5d492_D_n3d008_False.csv',
+#                                 14,
+#                                 0.217)
+# reference100us = readRawWaveform(r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En04_F_n1d378_U_p5d492_D_n3d008_False.csv',
+#                                  14,
+#                                  0.217)
+# reference1us = readRawWaveform(r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En06_F_n1d378_U_p5d492_D_n3d008_False.csv',
+#                                14,
+#                                0.217)
+# reference10us = readRawWaveform(r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En05_F_n1d378_U_p5d492_D_n3d008_False.csv',
+#                                 14,
+#                                 0.217)
 
 # plotWaveforms([booster1us,
 #                booster10us,
@@ -256,9 +267,62 @@ nobooster100us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-
 #                '100 us'],
 #               True)
 
-plotWaveforms([booster10us,
-               nobooster10us],
-              'Booster Comparison 10 us',
-              ['Booster',
-               'No Booster'],
-              True)
+# plotWaveforms([booster1us,
+#                nobooster1us],
+#               '1 us Comparison',
+#               ['Booster','No Booster'],
+#               True,
+#               reference=reference1us)
+
+# plotWaveforms([booster10us,
+#                nobooster10us],
+#               'Booster Comparison 10 us',
+#               ['Booster',
+#                'No Booster'],
+#               True,
+#               reference=reference10us)
+
+# plotWaveforms([booster20us,
+#                booster20usBetterCable],
+#               '20 us Pulsing Differences',
+#               ['Bad Cable',
+#                'Official Cable'],
+#               True,
+#               reference=reference20us)
+
+# plotWaveforms([booster100us,
+#                nobooster100us],
+#               '100 us Comparison',
+#               ['Booster','No Booster'],
+#               True,
+#               reference=reference100us)
+
+if __name__ == '__main__':
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--ph', type=float)
+    parser.add_argument('--area', type=float)
+    parser.add_argument('--refpot', type=float)
+    parser.add_argument('--irange', type=str)
+    parser.add_argument('--time', type=float)
+    parser.add_argument('--freq', type=float)
+    parser.add_argument('--filename', type=str)
+    parser.add_argument('--stretch', default=1, type=int)
+    args = parser.parse_args()
+    
+    try:
+    
+        data = readOSC(args.filename,
+                    args.ph,
+                    args.area,
+                    args.refpot,
+                    args.irange,
+                    stretch=args.stretch)
+        analyzeWaveform(data,
+                        args.time,
+                        args.freq,
+                        args.filename)
+        
+    except TypeError:
+        
+        whycantijustterminateapythonscriptmantherehastobeaworkaroundforthisright = 1

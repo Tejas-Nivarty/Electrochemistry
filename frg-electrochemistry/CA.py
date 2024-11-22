@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import linregress
 from math import log10
-from ReadDataFiles import readCA, colorFader
+from ReadDataFiles import readCA, colorFader, calculateIntegral
 
 def getTafel(filenameList,pH,area,referencePotential):
     
@@ -64,43 +64,53 @@ def plotTafel(tafelList: list[tuple],legendList,title,colors=None):
     
     return
 
+def plotCA(filenames,pH,area,referencePotential,legendList,title):
+    
+    fig, ax = plt.subplots()
+    
+    for i, filename in enumerate(filenames):
+        
+        data = readCA(filename,pH,area,referencePotential)
+        color = colorFader('blue','red',i,len(filenames))
+        ax.plot(data['time/s'],
+                data['j/mA*cm-2'],
+                color=color,
+                label=legendList[i])
+    
+    ax.set(title=title+' Chronoamperometry',
+           ylabel = r'Current Density $(\frac{mA}{cm^2_{geo}})$',
+           xlabel = 'Time (s)')
+    ax.legend()
+    
+    plt.show()
 
-downTafelpast10 = getTafel([r'2024-04-09-TN-01-029\6_Tafel_Down_05_CA_C02.txt',
-                            r'2024-04-09-TN-01-029\6_Tafel_Down_06_CA_C02.txt',
-                            r'2024-04-09-TN-01-029\6_Tafel_Down_07_CA_C02.txt'],
-                           14,0.0929119616)
+    return
 
-upTafelpast10 = getTafel([r'2024-04-09-TN-01-029\12_Tafel_Up_05_CA_C02.txt',
-                          r'2024-04-09-TN-01-029\12_Tafel_Up_06_CA_C02.txt',
-                          r'2024-04-09-TN-01-029\12_Tafel_Up_07_CA_C02.txt'],
-                         14,0.0929119616)
+def integratePeaks(filenames):
+    
+    molesList = []
+    
+    for filename in filenames:
+        data = readCA(filename,14,0.1,0.197)
+        faradayConstant = 9.648533212331E4
+        coulombsTransferred = calculateIntegral(data['time/s'],
+                                                data['I/mA']/1000,
+                                                0,
+                                                [-np.inf,np.inf])
+        molesTransferred = coulombsTransferred/faradayConstant
+        print('{filename}: {moles} mol e-'.format(filename=filename,
+                                                  moles=molesTransferred))
+        
+    
+    return molesList
 
-downTafel20 = getTafel([r'2024-04-17-TN-01-032\7_Tafel_PoledDown_04_CA_C02.txt',
-                        r'2024-04-17-TN-01-032\7_Tafel_PoledDown_05_CA_C02.txt',
-                        r'2024-04-17-TN-01-032\7_Tafel_PoledDown_06_CA_C02.txt',
-                        r'2024-04-17-TN-01-032\7_Tafel_PoledDown_07_CA_C02.txt'],
-                       14,0.0632532579)
-
-upTafel20 = getTafel([r'2024-04-17-TN-01-032\14_Tafel_PoledUp_04_CA_C02.txt',
-                      r'2024-04-17-TN-01-032\14_Tafel_PoledUp_05_CA_C02.txt',
-                      r'2024-04-17-TN-01-032\14_Tafel_PoledUp_06_CA_C02.txt',
-                      r'2024-04-17-TN-01-032\14_Tafel_PoledUp_07_CA_C02.txt'],
-                    14,0.0632532579)
-
-downTafelrecent10 = getTafel([r'2024-04-22-TN-01-033\13_Tafel_Poled_Down_05_CA_C02.txt',
-                              r'2024-04-22-TN-01-033\13_Tafel_Poled_Down_06_CA_C02.txt',
-                              r'2024-04-22-TN-01-033\13_Tafel_Poled_Down_07_CA_C02.txt',
-                              r'2024-04-22-TN-01-033\13_Tafel_Poled_Down_08_CA_C02.txt',],
-                             14,0.1277508776)
-
-upTafelrecent10 = getTafel([r'2024-04-22-TN-01-033\7_Tafel_Poled_Up_05_CA_C02.txt',
-                            r'2024-04-22-TN-01-033\7_Tafel_Poled_Up_06_CA_C02.txt',
-                            r'2024-04-22-TN-01-033\7_Tafel_Poled_Up_07_CA_C02.txt',
-                            r'2024-04-22-TN-01-033\7_Tafel_Poled_Up_08_CA_C02.txt'],
-                           14,0.1277508776)
-
-
-plotTafel([downTafelpast10,upTafelpast10,downTafelrecent10,upTafelrecent10,downTafel20,upTafel20],
-          ['10 nm Down','10 nm Up','10 nm Down (new)','10 nm Up (new)','20 nm Down','20 nm Up'],
-          'SRO Underlayer Series Static Tafel Slopes',
-          colors=['green','darkgreen','blue','darkblue','red','darkred'])
+plotCA([r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-12-TN-01-058\11_Static_CA_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-12-TN-01-058\13_Static_CA_Booster_Stirring_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\7_Static_CA_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-16-TN-01-061\7_Static_CA_C01.txt',
+                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-20-TN-01-062\7_Static_CA_C01.txt'],
+       14,
+       0.1734377200,
+       0.217,
+       ['1','2','3','4','5'],
+       r'TN-01-049-3, $V_{RHE}$ = -0.337')

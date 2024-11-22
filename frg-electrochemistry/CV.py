@@ -22,7 +22,7 @@ def plotOneCV(data,title):
     plt.show()
     return
     
-def plotCompareCV(dataList,legendList,title,cycleList=None,horizontalLine=False,verticalLine=False,xlim=None,ylim=None):
+def plotCompareCV(dataList,legendList,title,cycleList=None,horizontalLine=False,verticalLine=False,xlim=None,ylim=None,currentdensity=True):
     numFiles = len(dataList)
     fig, ax = plt.subplots()
     if horizontalLine:
@@ -42,13 +42,23 @@ def plotCompareCV(dataList,legendList,title,cycleList=None,horizontalLine=False,
             cycle = cycleList[i]
         dataSlice = data[data['cycle number'] == cycle]
         if legendList == None:
-            ax.plot(dataSlice['Ewe/mV'],dataSlice['j/mA*cm-2'],color = color)
+            if currentdensity:
+                ax.plot(dataSlice['Ewe/mV'],dataSlice['j/mA*cm-2'],color = color)
+            else:
+                ax.plot(dataSlice['Ewe/mV'],dataSlice['I/A'],color = color)
         else:
-            ax.plot(dataSlice['Ewe/mV'],dataSlice['j/mA*cm-2'],color = color,label = legendList[i])
-        
-    ax.set(title = title,
-           xlabel = r'$mV_{RHE}$',
-           ylabel = r'j $(\frac{mA}{cm^2_{geo}})$')
+            if currentdensity:
+                ax.plot(dataSlice['Ewe/mV'],dataSlice['j/mA*cm-2'],color = color,label = legendList[i])
+            else:
+                ax.plot(dataSlice['Ewe/mV'],dataSlice['I/A'],color = color,label = legendList[i])
+    if currentdensity:
+        ax.set(title = title,
+            xlabel = r'$mV_{RHE}$',
+            ylabel = r'j $(\frac{mA}{cm^2_{geo}})$')
+    else:
+        ax.set(title = title,
+            xlabel = r'$mV_{RHE}$',
+            ylabel = r'Current (A)')
     if legendList != None:
         ax.legend()
     if ylim:
@@ -96,19 +106,21 @@ def plotECSA(dataList,title,trasatti=False):
         oxidativeCurrentSlice = dataSlice[dataSlice['ox/red'] == 1]
         reductiveCurrentSlice = dataSlice[dataSlice['ox/red'] == 0]
         #finds maximum oxidative and maximum reductive current
-        maxOxidativeCurrent = oxidativeCurrentSlice['I/A'].abs().max()
-        maxReductiveCurrent = reductiveCurrentSlice['I/A'].abs().max()
+        #nlargest removes spikes and takes n largest value
+        maxOxidativeCurrent = oxidativeCurrentSlice['I/A'].abs().nlargest(5,keep='last').iloc[:-1].mean()
+        maxReductiveCurrent = reductiveCurrentSlice['I/A'].abs().nlargest(5,keep='last').iloc[:-1].mean()
         #takes smaller of the peak oxidative and reductive currents (less faradaic contribution)
-        if maxOxidativeCurrent > maxReductiveCurrent:
-            currentList.append(maxReductiveCurrent)
-        else:
-            currentList.append(maxOxidativeCurrent)
+        # if maxOxidativeCurrent > maxReductiveCurrent:
+        #     currentList.append(maxReductiveCurrent)
+        # else:
+        #     currentList.append(maxOxidativeCurrent)
+        currentList.append(maxOxidativeCurrent+maxReductiveCurrent/2)
 
     if not trasatti:
         
         #plots ECSA CVs
         legendList = ['{:3.0f} '.format(i*1000)+r'$\frac{mV}{s}$' for i in scanRateList]
-        plotCompareCV(dataList,legendList,title+' EDLC CVs',horizontalLine=True)
+        plotCompareCV(dataList,legendList,title+' EDLC CVs',horizontalLine=True,currentdensity=False)
         
         #performs linear regression and plots
         result = linregress(scanRateList,currentList)
@@ -197,10 +209,10 @@ def buildEDLCList(folderName,number,pH,area,referencePotential,excludeLastX=0):
 #               horizontalLine=True,
 #               verticalLine=True)
 
-edlc = buildEDLCList(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060',
-                    15,
+edlc = buildEDLCList(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-12-TN-01-058',
+                    7,
                     14,
                     0.1734377200,
-                    0.217)
-plotECSA(edlc,'After')
-
+                    0.217,
+                    excludeLastX=1)
+plotECSA(edlc[:5]+edlc[6:],'Before')

@@ -265,11 +265,12 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
     data['Time (s)'] = data['Time (ms)']/1000
     data['RawVoltage (V)'] = data['Voltage (V)']
     data['Voltage (V)'] = data['Voltage (V)'] + referencePotential + 0.059*pH
-    if irange == '1 A' or irange == '2 A': #unsure if this is right
+    
+    if irange == '1A' or irange == '2A': #unsure if this is right
         data['Current (A)'] = data['Current (A)']
-    elif irange == '100 mA':
+    elif irange == '100mA':
         data['Current (A)'] = data['Current (A)']*0.1
-    elif irange == '10 mA':
+    elif irange == '10mA':
         data['Current (A)'] = data['Current (A)']*0.01
     
     chargeArray = sc.integrate.cumulative_trapezoid(data['Current (A)'],
@@ -346,3 +347,15 @@ def colorFader(c1: str,c2: str,currentIndex: int, totalIndices: int):
     c1=np.array(mpl.colors.to_rgb(c1))
     c2=np.array(mpl.colors.to_rgb(c2))
     return mpl.colors.to_hex((1-mix)*c1 + mix*c2)
+
+def calculateIntegral(timeSeries,valueSeries,baseline,timeBounds):
+    
+    #truncates timeSeries and valueSeries according to timeBounds
+    timeSeries = timeSeries[(timeSeries >= timeBounds[0]) & (timeSeries <= timeBounds[1])]
+    valueSeries = valueSeries.loc[timeSeries.first_valid_index():timeSeries.last_valid_index()]
+    
+    #subtracts baseline from valueSeries
+    valueSeries = valueSeries - baseline
+    
+    #integrates
+    return sc.integrate.trapezoid(y=valueSeries,x=timeSeries)
