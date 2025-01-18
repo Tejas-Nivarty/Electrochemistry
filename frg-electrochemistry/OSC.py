@@ -126,13 +126,13 @@ def plotWaveform(pulse: pd.DataFrame, title: str, jv: bool, reference = pd.DataF
         plt.axvline(-1.965,color='k',linestyle='--',zorder=0)
         plt.axvline(6.535,color='k',linestyle='--',zorder=0)
         plt.axvline(-0.335,color='k',linestyle='--',zorder=0)
-        plt.scatter(pulse['Voltage (V)'],pulse['Charge Density (mC/cm^2)'],c=(pulse['Time (s)']-pulse['Time (s)'].iloc[0])*1e6,cmap='gist_rainbow')
-        #plt.scatter(pulse['Voltage (V)'],pulse['Current (A)'],c=(pulse['Time (s)']-pulse['Time (s)'].iloc[0])*1e6,cmap='gist_rainbow')
+        #plt.scatter(pulse['Voltage (V)'],pulse['Charge Density (mC/cm^2)'],c=(pulse['Time (s)']-pulse['Time (s)'].iloc[0])*1e6,cmap='gist_rainbow')
+        plt.scatter(pulse['Voltage (V)'],pulse['Current Density (mA/cm^2)'],c=(pulse['Time (s)']-pulse['Time (s)'].iloc[0])*1e6,cmap='gist_rainbow')
         plt.colorbar(label=r'Time ($\mu$s)')
         plt.title(title)
         plt.xlabel(r'Voltage (V$_{RHE}$)')
-        plt.ylabel(r'Charge Density $(\frac{mC}{cm^2_{geo}})$')
-        #plt.ylabel(r'Current (A)')
+        #plt.ylabel(r'Charge Density $(\frac{mC}{cm^2_{geo}})$')
+        plt.ylabel(r'Current Density $(\frac{mA}{cm^2_{geo}})$')
         plt.show()
     
     return
@@ -205,21 +205,21 @@ def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv:
     
     return
 
-# booster1us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\8_Dynamic_CA_1000Hz_1us.csv',
-#                      14,
-#                      0.17343772,
-#                      0.217,
-#                      '2 A')
-# booster10us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\9_Dynamic_CA_1000Hz_10us.csv',
-#                      14,
-#                      0.17343772,
-#                      0.217,
-#                      '2 A')
-# booster100us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\10_Dynamic_CA_1000Hz_100us.csv',
-#                      14,
-#                      0.17343772,
-#                      0.217,
-#                      '2 A')
+booster1us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\8_Dynamic_CA_1000Hz_1us.csv',
+                     14,
+                     0.17343772,
+                     0.217,
+                     '2 A')
+booster10us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\9_Dynamic_CA_1000Hz_10us.csv',
+                     14,
+                     0.17343772,
+                     0.217,
+                     '2 A')
+booster100us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\10_Dynamic_CA_1000Hz_100us.csv',
+                     14,
+                     0.17343772,
+                     0.217,
+                     '2 A')
 # nobooster1us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\8_1000Hz_PW-6_Dynamic_CA.csv',
 #                        14,
 #                        0.1826403875,
@@ -230,41 +230,74 @@ def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv:
 #                        0.1826403875,
 #                        0.209,
 #                        '1 A')
-# nobooster100us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\11_1000Hz_Dynamic_CA.csv',
-#                        14,
-#                        0.1826403875,
-#                        0.209,
-#                        '1 A')
+nobooster100us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\11_1000Hz_Dynamic_CA.csv',
+                       14,
+                       0.1826403875,
+                       0.209,
+                       '1 A')
 # booster20us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\11_Dynamic_CA_1000Hz_20us.csv',
 #                       14,
 #                       0.17343772,
 #                       0.217,
 #                       '2 A')
-# booster20usBetterCable = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\12_Dynamic_CA_1000Hz_20us_newboostercable.csv',
-#                                 14,
-#                                 0.17343772,
-#                                 0.217,
-#                                 '2 A')
+booster20usBetterCable = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\12_Dynamic_CA_1000Hz_20us_newboostercable.csv',
+                                14,
+                                0.17343772,
+                                0.217,
+                                '2 A')
 # reference20us = readRawWaveform(r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_2d000En05_F_n1d378_U_p5d492_D_n3d008_False.csv',
 #                                 14,
 #                                 0.217)
-# reference100us = readRawWaveform(r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En04_F_n1d378_U_p5d492_D_n3d008_False.csv',
-#                                  14,
-#                                  0.217)
+reference100us = readRawWaveform(r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En04_F_n1d378_U_p5d492_D_n3d008_False.csv',
+                                 14,
+                                 0.217)
 # reference1us = readRawWaveform(r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En06_F_n1d378_U_p5d492_D_n3d008_False.csv',
 #                                14,
 #                                0.217)
 # reference10us = readRawWaveform(r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En05_F_n1d378_U_p5d492_D_n3d008_False.csv',
 #                                 14,
 #                                 0.217)
+# reference100usNF = readRawWaveform(r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En04_F_n0d8_U_p5d5_D_n3d0_False.csv',
+#                                    14,
+#                                    0.209)
+# reference100usNFOnlyDown = readRawWaveform(r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En04_F_n0d8_U_n0d8_D_n3d0_False.csv',
+#                                            14,
+#                                            0.209)
+# NF100us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-04-TN-01-054\9_1000Hz_1E-4_NonFaradaic.csv',
+#                   14,
+#                   0.1826403875,
+#                   0.209,
+#                   '1 A')
+# NFOnlyDown100us = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-04-TN-01-054\8_1000Hz_1E-4_OnlyDown.csv',
+#                           14,
+#                           0.1826403875,
+#                           0.209,
+#                           '1 A')
+
+# plotWaveform(NF100us,
+#              '1 kHz, 100 $\mu$s Non-Faradaic Up and Down',
+#              True,
+#              reference=reference100usNF)
+# plotWaveform(NFOnlyDown100us,
+#              '1 kHz, 100 $\mu$s Non-Faradaic Only Down Pulse',
+#              True,
+#              reference=reference100usNFOnlyDown)
+# plotWaveforms([NF100us,
+#                NFOnlyDown100us],
+#               'Non-Faradaic Comparison',
+#               ['Up and Down',
+#                'Only Down'],
+#               True)
 
 # plotWaveforms([booster1us,
 #                booster10us,
+#                booster20usBetterCable,
 #                booster100us],
-#               'Booster Comparison',
-#               ['1 us',
-#                '10 us',
-#                '100 us'],
+#               'Booster Comparison 1 kHz',
+#               ['1 $\mu$s',
+#                '10 $\mu$s',
+#                '20 $\mu$s',
+#                '100 $\mu$s'],
 #               True)
 
 # plotWaveforms([booster1us,
@@ -296,6 +329,10 @@ def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv:
 #               ['Booster','No Booster'],
 #               True,
 #               reference=reference100us)
+# plotWaveform(nobooster100us,
+#              '1000 Hz, 100 $\mu$s Voltage and Current Response',
+#              True,
+#              reference=reference100us)
 
 if __name__ == '__main__':
     

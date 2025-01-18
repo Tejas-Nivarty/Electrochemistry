@@ -197,22 +197,24 @@ def buildEDLCList(folderName,number,pH,area,referencePotential,excludeLastX=0):
 
     return buildDataList(edlcFiles,pH,area,referencePotential)
 
-# post = readCV(r'Data_Files\2024-06-18-TN-01-044\15_CV_02_CV_C02.txt',
-#               14,
-#               0.063253258)
+firstsampleCVList = [r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\HER-Ultrathin SRO-BTO-SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-ext_02_CV_C01.txt',
+                     r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-05\Poled-Up-2nd-Highvoltage-8V-Ultra Thin-SRO-BTO-SRO-NSTO-Graphite Counter-SCE Ref-1M KOH_15_CA_C01.txt'
+                    ]
+dataList = []
 
-# pre = readCV(r'Data_Files\2024-05-01-TN-01-038\12_CV_02_CV_C02.txt',
-#              14,
-#              0.063253258)
+for filename in firstsampleCVList:
+    
+    print(filename)
+    dataList.append(readCV(filename,
+                           14,
+                           0.18,
+                           0.197))
+    #guesses for parameters
 
-# plotCompareCV([pre,post],['Pre-','Post-'],'20 nm SRO Underlayer Ar Purged',
-#               horizontalLine=True,
-#               verticalLine=True)
-
-edlc = buildEDLCList(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-12-TN-01-058',
-                    7,
-                    14,
-                    0.1734377200,
-                    0.217,
-                    excludeLastX=1)
-plotECSA(edlc[:5]+edlc[6:],'Before')
+plotCompareCV(dataList,
+              ['1','2','3'],
+              'Title',
+              horizontalLine=True,
+              verticalLine=True,
+              currentdensity=True,
+              cycleList=[2,2,2])

@@ -359,3 +359,19 @@ def calculateIntegral(timeSeries,valueSeries,baseline,timeBounds):
     
     #integrates
     return sc.integrate.trapezoid(y=valueSeries,x=timeSeries)
+
+def readBayesDRT2(filename,freqRange):
+    """Reads filename into BayesDRT2 format.
+
+    Args:
+        filename (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    data = readPEISPandas(filename)
+    data = data[(data['freq/Hz'] >= freqRange[0]) & (data['freq/Hz'] <= freqRange[1])]
+    freq = data['freq/Hz'].values
+    Z = data['Re(Z)/Ohm'].values - 1j * data['-Im(Z)/Ohm'].values
+    
+    return freq, Z

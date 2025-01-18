@@ -79,11 +79,14 @@ def plotOneNyquist(filename,title,freqRange,fitModel=False,circuitString = None,
     
     return circuit
 
-def plotCompareNyquist(filenames,title,freqRange,fitModel=False,circuitString=None,initialGuess=[],bounds=([],[]),legendList=None):
+def plotCompareNyquist(filenames,title,freqRange,fitModel=False,circuitString=None,initialGuess=[],bounds=([],[]),legendList=None,saveData=False):
     
     numberOfPlots = len(filenames)
     circuitList = []
     fig, ax = plt.subplots()
+    
+    if saveData:
+        datadf = pd.DataFrame()
     
     for i in range(0,numberOfPlots):
         
@@ -113,6 +116,13 @@ def plotCompareNyquist(filenames,title,freqRange,fitModel=False,circuitString=No
             ax.plot(Z.real,-Z.imag,'o',color=color)
         if fitModel:
             ax.plot(zPredict.real,-zPredict.imag,color=color,linestyle='-',label='_')
+            
+        if saveData:
+            datadf[legendList[i]+' RealData'] = Z.real
+            datadf[legendList[i]+' -ImagData'] = -Z.imag
+            if fitModel:
+                datadf[legendList[i]+' RealCircuitFit'] = zPredict.real
+                datadf[legendList[i]+' -ImagCircuitFit'] = -zPredict.imag 
         
     
     maxBounds = max([ax.get_ylim()[1],ax.get_xlim()[1]])
@@ -121,14 +131,19 @@ def plotCompareNyquist(filenames,title,freqRange,fitModel=False,circuitString=No
            xlabel = 'Re(Z(f)) ($\Omega$)',
            ylabel = '-Im(Z(f)) ($\Omega$)')
     
+    plt.axis('square')
+    
     if legendList != None:
         ax.legend()
     
     plt.show()
     
-    return circuitList
+    if saveData:
+        return datadf
+    else:
+        return circuitList
 
-def plotCircuitProperties(circuitList):
+def plotCircuitProperties(circuitList,legendList,saveData=False):
     
     numberOfCircuits = len(circuitList)
     
@@ -140,11 +155,29 @@ def plotCircuitProperties(circuitList):
     parameterMatrix = np.zeros((numberOfParameters,numberOfCircuits))
     confMatrix = np.zeros((numberOfParameters,numberOfCircuits))
     
+    datadf = None
+    
+    if saveData:
+        datadf = pd.DataFrame()
+    
     for i in range(0,numberOfParameters):
         for j in range(0,numberOfCircuits):
             parameterMatrix[i,j] = circuitList[j].parameters_[i]
             confMatrix[i,j] = circuitList[j].conf_[i]
-    
+            
+    if saveData:
+        
+        elementStringList = []
+        for i, name in enumerate(names):
+            elementStringList.append(name + ' ' + units[i])
+        
+        datadf['Circuit Element'] = elementStringList
+        
+        for i in range(0,numberOfCircuits):
+            
+            datadf[legendList[i]+' Value'] = circuitList[i].parameters_
+            datadf[legendList[i]+' Err'] = circuitList[i].conf_
+                
     for i, parameter in enumerate(names):
         
         fig, ax = plt.subplots()
@@ -156,10 +189,12 @@ def plotCircuitProperties(circuitList):
                     capsize=5)
         ax.set(title=parameter,
                ylabel = parameter + ' (' + units[i] + ')',
-               xlabel = 'Circuit Index')
+               xticks = range(numberOfCircuits),
+               xticklabels = legendList)
+        
         plt.show()
     
-    return
+    return datadf
 
 def convertToPyDRTTools(filename:str,freqRange: list[float]):
     
@@ -191,7 +226,7 @@ def processFolder(foldername: str, freqRange):
     
     return
 
-def plotCompareDRT(filenames,title,freqRange,legendList=None):
+def plotCompareDRT(filenames,title,freqRange,legendList=None,rbf_type='Gaussian',der_used='1st order',cv_type='GCV',reg_param=1E-4,shape_control='FWHM Coefficient',coeff=0.1):
     
     numberOfPlots = len(filenames)
     fig, ax = plt.subplots()
@@ -207,14 +242,14 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None):
                         data['Re(Z)/Ohm'].to_numpy(),
                         data['Im(Z)/Ohm'].to_numpy())
         data = simple_run(data,
-                        rbf_type='Gaussian',
+                        rbf_type=rbf_type,
                         data_used='Combined Re-Im Data',
                         induct_used=0,
-                        der_used='1st order',
-                        cv_type='GCV',
-                        reg_param= 1E-3, #1E-4 is good
-                        shape_control='FWHM Coefficient',
-                        coeff=0.1) #0.3 is good
+                        der_used=der_used,
+                        cv_type=cv_type,
+                        reg_param= reg_param, #1E-4 is good
+                        shape_control=shape_control,
+                        coeff=coeff) #0.3 is good
         color = colorFader('blue','red',i,numberOfPlots)
         freq = 1 / data.out_tau_vec
         ax.plot(data.out_tau_vec, data.gamma,color=color)
@@ -274,237 +309,43 @@ def predictCurrent(peisFilename,voltageWaveformFilename,pH,area,referencePotenti
         
     return dataframe
 
-# circuitList = plotCompareNyquist([r'Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Data_Files\2024-08-01-TN-01-051\5_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Data_Files\2024-08-01-TN-01-051\15_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Data_Files\2024-08-04-TN-01-052\6_PEIS_HER_After_Debubbling_02_PEIS_C01.txt',
-#                                   r'Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Data_Files\2024-08-05-TN-01-053\6_PEIS_HER_afterdebubbling_02_PEIS_C01.txt',
-#                                   r'Data_Files\2024-08-05-TN-01-053\16_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Data_Files\2024-09-04-TN-01-054\5_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Data_Files\2024-09-04-TN-01-054\15_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Data_Files\2024-09-09-TN-01-055\5_PEIS_HER_C01.txt',
-#                                   r'Data_Files\2024-09-09-TN-01-055\13_PEIS_HER_C01.txt'
-#                                   ],
-#                                 'Degradation of N&S Sample',
-#                                 [3,100000],
-#                                 fitModel=True,
-#                                 circuitString='p(R1,CPE1)-R0',
-#                                 bounds = ([0,0,0,5],[1000,150e-6,1,15]),
-#                                 initialGuess=[250,50e-6,1,9])
-# plotCircuitProperties(circuitList)
+#common minimum is 1.258 Hz
+baseline = plotCompareNyquist([r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\Gen2_VC\240820_Li_Symm_20um_Gen2+VC_Before cycling_C01.mpt', #1.258 Hz min
+                    r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\Gen2_VC\240820_Li_Symm_20um_Gen2+VC_1-1_SingleCycle_C01.mpt', #0.0099853007 Hz min
+                    r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\Gen2_VC\240820_Li_Symm_20um_Gen2+VC_1-1_95Cycles_C01.mpt'], #0.0099853007 Hz min
+                   'Baseline',
+                   [1.2,200000],
+                   legendList=['Before Cycling',
+                                'Single Cycle',
+                                '95 Cycles'],
+                   fitModel=True,
+                   circuitString='R1-p(CPE2,R2)-p(CPE3,R3-Ws3)',
+                   initialGuess=[15 , 5e-6, 1   , 250  , 8e-6   , 1   , 600  , 90000  , 40000  ],
+                   bounds=     ([5  , 1e-7, 0.5 , 10   , 1e-6   , 0.5 , 10   , 0      , 0      ],
+                                [30 , 9e-5, 1   , 2000 , 5e-5   , 1   , 9000 , 900000 , 100000 ]))
+baseline = plotCircuitProperties(baseline,
+                      ['Before Cycling',
+                       'Single Cycle',
+                       '95 Cycles'],
+                      saveData=True)
+illge = plotCompareNyquist([r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\Before Cycling\GA240830-1_240902_20um_IL-LGE_BeforeCycling.mpt', #1.258 Hz min
+                    r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\Single Cycling\GA240830-1_240902_20um_IL-LGE_1-1_SingleCycle.mpt', #1.258 Hz min
+                    r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\100 Cycles\GA240830-1_240911_LGE_p20_1_100Cycles_C01.mpt'], #0.0099853007 Hz min
+                   'IL-LGE',
+                   [1.2,200000],
+                   legendList=['Before Cycling',
+                                'Single Cycle',
+                                '100 Cycles'],
+                   fitModel=True,
+                   circuitString='R1-p(CPE2,R2)-p(CPE3,R3-Ws3)',
+                   initialGuess=[7 , 1e-5, 1   , 250  , 1e-4 , 1   , 250  , 100000  , 40000  ],
+                   bounds=     ([3 , 1e-7, 0.5 , 5    , 1e-5 , 0.5 , 10   , 0       , 0      ],
+                                [20, 5e-5, 1   , 9000 , 1e-2 , 1   , 9000 , 9000000 , 100000 ]))
+illge = plotCircuitProperties(illge,
+                      ['Before Cycling',
+                        'Single Cycle',
+                        '100 Cycles'],
+                      saveData=True)
 
-# circuitList = plotCompareNyquist([r'Data_Files\2024-06-18-TN-01-044\4_PEIS_HER_C02.txt',
-#                                   r'Data_Files\2024-06-18-TN-01-044\14_PEIS_HER_02_PEIS_C02.txt',
-#                                   #r'Joana Data\2024-07-09-JD-01-008\7_PEIS_HER_02_PEIS_C01.txt',
-#                                   #r'Joana Data\2024-07-09-JD-01-008\17_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Joana Data\2024-07-12-JD-01-009\5_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Joana Data\2024-07-12-JD-01-009\15_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Joana Data\2024-07-18-JD-01-010\5_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Joana Data\2024-07-18-JD-01-010\10_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Joana Data\2024-07-23-JD-01-010\5_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Joana Data\2024-07-24-JD-01-011\7_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Joana Data\2024-07-24-JD-01-011\13_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Joana Data\2024-07-29-JD-01-011-mrb230410Cii\5_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Joana Data\2024-07-30-JD-01-011\5_PEIS_HER_02_PEIS_C01.txt',
-#                                   r'Joana Data\2024-07-30-JD-01-011\14_PEIS_HER_02_PEIS_C01.txt',
-#                                  ],
-#                                 'Degradation of Matt\'s 2nd Sample',
-#                                 [2,200000],
-#                                 fitModel=True,
-#                                 circuitString='p(R1,CPE1)-R0',
-#                                 bounds = ([500,0,0,12],[8000,1000e-6,1,70]),
-#                                 initialGuess=[1000,50e-6,1,16])
-# plotCircuitProperties(circuitList)
-
-#processFolder(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files',[3,7000000])
-
-# plotCompareDRT([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
-#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\5_PEIS_HER_02_PEIS_C01.txt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\15_PEIS_HER_02_PEIS_C01.txt',
-#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\6_PEIS_HER_After_Debubbling_02_PEIS_C01.txt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt',
-#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\6_PEIS_HER_afterdebubbling_02_PEIS_C01.txt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\16_PEIS_HER_02_PEIS_C01.txt',
-#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-04-TN-01-054\5_PEIS_HER_02_PEIS_C01.txt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-04-TN-01-054\15_PEIS_HER_02_PEIS_C01.txt',
-#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-09-TN-01-055\5_PEIS_HER_C01.txt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-09-09-TN-01-055\13_PEIS_HER_C01.txt'
-#                 ],
-#                'DRT Evolution of N&S',
-#                [3,200000])
-
-# initialEIS = predictCurrent(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\6_PEIS_HER_After_Debubbling_02_PEIS_C01.txt',
-#                     r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\11_100kHz_PW-6_Dynamic_CA.csv',
-#                     14,
-#                     0.182,
-#                     0.209)
-# finalEIS = predictCurrent(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt',
-#                     r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\11_100kHz_PW-6_Dynamic_CA.csv',
-#                     14,
-#                     0.182,
-#                     0.209)
-# realData = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\11_100kHz_PW-6_Dynamic_CA.csv',
-#                    14,
-#                    0.182,
-#                    0.209,
-#                    '1 A')
-# plotWaveforms([initialEIS,finalEIS,realData],'Comparison',['Initial EIS','Final EIS','Real'],True)
-
-# pwn6 = predictCurrent(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt',
-#                       r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En06_F_n1d37_U_p5d5_D_n3d0_False.csv',
-#                       14,
-#                       0.1826403875,
-#                       0.209)
-# pwn5 = predictCurrent(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt',
-#                       r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En05_F_n1d37_U_p5d5_D_n3d0_False.csv',
-#                       14,
-#                       0.1826403875,
-#                       0.209)
-# pwn4 = predictCurrent(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt',
-#                       r'C:\Users\tejas\Analysis\Potentiostat\Waveforms\f_1d000000Ep03_PW_1d000En04_F_n1d37_U_p5d5_D_n3d0.csv',
-#                       14,
-#                       0.1826403875,
-#                       0.209)
-# realpwn6 = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\8_1000Hz_PW-6_Dynamic_CA.csv',
-#                    14,
-#                    0.1826403875,
-#                    0.209,
-#                    '1 A')
-# realpwn5 = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\7_1000Hz_PW-5_Dynamic_CA.csv',
-#                    14,
-#                    0.1826403875,
-#                    0.209,
-#                    '1 A')
-# realpwn4 = readOSC(r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\9_1000Hz_Dynamic_CA.csv',
-#                    14,
-#                    0.1826403875,
-#                    0.209,
-#                    '1 A')
-
-# plotWaveforms([pwn6,pwn5,pwn4,realpwn6,realpwn5,realpwn4],
-#               'Argon-Saturated Current Responses',
-#               ['1 us Ideal',
-#                '10 us Ideal',
-#                '100 us Ideal',
-#                '1 us Real',
-#                '10 us Real',
-#                '100 us Real'],
-#               True,
-#               customColors = ['#FF5F5F',
-#                               '#FF1E1E',
-#                               '#7A0000',
-#                               '#88B2ED',
-#                               '#4889CD',
-#                               '#183859'])
-
-# plotCompareDRT([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\6_PEIS_HER_02_PEIS_C01.txt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-07-31-TN-01-050\18_PEIS_HER_02_PEIS_C01.txt',
-#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\6_PEIS_HER_afterdebubbling_02_PEIS_C01.txt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-05-TN-01-053\16_PEIS_HER_02_PEIS_C01.txt',
-#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\5_PEIS_HER_02_PEIS_C01.txt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-01-TN-01-051\15_PEIS_HER_02_PEIS_C01.txt',
-#                 #r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\6_PEIS_HER_After_Debubbling_02_PEIS_C01.txt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-08-04-TN-01-052\15_PEIS_HER_02_PEIS_C01.txt'
-#                 ],
-#                'Ar vs. N2 Distribution of Relaxation Times',
-#                [1,200000],
-#                ['Initial N2',
-#                 'Final N2',
-#                 'Initial Ar',
-#                 'Final Ar'])
-
-# plotCompareNyquist([r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Ultra-tin-SRO-BTO-SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_17_PEIS_C01.txt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-3UC-SRO-BTO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_17_PEIS_C01.txt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Thick SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-Repeat2_17_PEIS_C01.txt'],
-#                    '',
-#                [1,200000],
-#                True,
-#                circuitString='p(p(R1,CPE1),p(R2,CPE2))-R0',
-#                bounds = ([0,0,0,0,0,0,0],
-#                          [8000,1000e-6,1,8000,1000e-6,1,70]),
-#                initialGuess=[1000,50e-6,1,1000,50e-6,1,16],
-#                legendList=['1.5 UC SRO',
-#                 '3 UC SRO',
-#                 '48 UC SRO'])
-# plotCompareDRT([r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Ultra-tin-SRO-BTO-SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_17_PEIS_C01.txt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-3UC-SRO-BTO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_17_PEIS_C01.txt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Thick SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-Repeat2_17_PEIS_C01.txt'],
-#                'Comparison',
-#                [1,200000],
-#                ['1.5 UC SRO',
-#                 '3 UC SRO',
-#                 '48 UC SRO'])
-
-# plotCompareDRT([r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\Before Cycling\GA240830-1_240902_20um_IL-LGE_BeforeCycling.mpt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\Single Cycling\GA240830-1_240902_20um_IL-LGE_1-1_SingleCycle.mpt',
-#                 r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\100 Cycles\GA240830-1_240911_LGE_p20_1_100Cycles_C01.mpt'],
-#                'DRT Comparison IL-LGE',
-#                [5,1.5E6],
-#                ['Before Cycling',
-#                 'Single Cycle',
-#                 '100 Cycles'])
-# plotCompareNyquist([r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\Before Cycling\GA240830-1_240902_20um_IL-LGE_BeforeCycling.mpt',
-#                     r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\Single Cycling\GA240830-1_240902_20um_IL-LGE_1-1_SingleCycle.mpt',
-#                     r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\100 Cycles\GA240830-1_240911_LGE_p20_1_100Cycles_C01.mpt'],
-#                    'IL-LGE',
-#                    [5,1.5E6],
-#                    legendList=['Before Cycling',
-#                                 'Single Cycle',
-#                                 '100 Cycles'],
-#                    fitModel=True,
-#                    circuitString='R1-p(C2,R2)-p(C3,R3)',
-#                    initialGuess=[7,1e-6,30,1e-6,400],
-#                    bounds=([5 ,1e-8,25 ,1e-8,20 ],
-#                            [15,1e-2,377,1e-2,500]))
-
-plotCompareDRT([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_01_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_02_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_03_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_04_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_05_PEIS_C01.txt',],
-               'Poled Down',
-               [1,2E5],
-               [#'0 $V_{RHE}$',
-                '-0.1 $V_{RHE}$',
-                '-0.2 $V_{RHE}$',
-                '-0.3 $V_{RHE}$',
-                '-0.4 $V_{RHE}$'])
-plotCompareNyquist([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_01_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_02_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_03_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_04_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\9_PEIS_HER_Down_05_PEIS_C01.txt',],
-                   'Poled Down',
-                   [1,2E5],
-                   legendList=[#'0 $V_{RHE}$',
-                '-0.1 $V_{RHE}$',
-                '-0.2 $V_{RHE}$',
-                '-0.3 $V_{RHE}$',
-                '-0.4 $V_{RHE}$'])
-plotCompareDRT([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_01_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_02_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_03_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_04_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_05_PEIS_C01.txt',],
-               'Poled Up',
-               [1,2E5],
-               [#'0 $V_{RHE}$',
-                '-0.1 $V_{RHE}$',
-                '-0.2 $V_{RHE}$',
-                '-0.3 $V_{RHE}$',
-                '-0.4 $V_{RHE}$'])
-plotCompareNyquist([#r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_01_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_02_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_03_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_04_PEIS_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-10-27-TN-01-056\11_PEIS_HER_Up_05_PEIS_C01.txt',],
-                   'Poled Up',
-                   [1,2E5],
-                   legendList=[#'0 $V_{RHE}$',
-                '-0.1 $V_{RHE}$',
-                '-0.2 $V_{RHE}$',
-                '-0.3 $V_{RHE}$',
-                '-0.4 $V_{RHE}$'])
+illge.to_csv(r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\DRT_and_Nyquist_Fits\Nyquist_Circuit_Fits\IL-LGE-Components.csv',index=False)
+baseline.to_csv(r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\DRT_and_Nyquist_Fits\Nyquist_Circuit_Fits\Baseline-Components.csv',index=False)

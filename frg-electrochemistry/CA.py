@@ -19,9 +19,7 @@ def getTafel(filenameList,pH,area,referencePotential):
         logCurrentDensityList.append(log10(-dataSlice['j/mA*cm-2'].mean()))
         
     linearRegression = linregress(logCurrentDensityList,overpotentialList)
-    
-    
-    
+
     return (overpotentialList,logCurrentDensityList,linearRegression)
 
 def plotTafel(tafelList: list[tuple],legendList,title,colors=None):
@@ -33,7 +31,7 @@ def plotTafel(tafelList: list[tuple],legendList,title,colors=None):
         
         overpotentialList,logCurrentDensityList,linearRegression = tafelList[i]
         if colors == None:
-            color = colorFader('green','blue',i/len(tafelList))
+            color = colorFader('green','blue',i,len(tafelList))
         else:
             color = colors[i]
         tafelSlope = linearRegression.slope
@@ -64,18 +62,25 @@ def plotTafel(tafelList: list[tuple],legendList,title,colors=None):
     
     return
 
-def plotCA(filenames,pH,area,referencePotential,legendList,title):
+def plotCA(filenames,pH,area,referencePotential,title,legendList=None):
     
     fig, ax = plt.subplots()
+    thermodynamicPotential = 0 #V vs. RHE
     
     for i, filename in enumerate(filenames):
         
         data = readCA(filename,pH,area,referencePotential)
         color = colorFader('blue','red',i,len(filenames))
+        if legendList == None:
+            overpotential = (thermodynamicPotential-data['Ewe/mV'].mean())
+            label = '{:3.0f} mV'.format(overpotential)
+        else:
+            label = legendList[i]
+            
         ax.plot(data['time/s'],
                 data['j/mA*cm-2'],
                 color=color,
-                label=legendList[i])
+                label=label)
     
     ax.set(title=title+' Chronoamperometry',
            ylabel = r'Current Density $(\frac{mA}{cm^2_{geo}})$',
@@ -104,13 +109,44 @@ def integratePeaks(filenames):
     
     return molesList
 
-plotCA([r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-12-TN-01-058\11_Static_CA_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-12-TN-01-058\13_Static_CA_Booster_Stirring_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-13-TN-01-060\7_Static_CA_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-16-TN-01-061\7_Static_CA_C01.txt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Data_Files\2024-11-20-TN-01-062\7_Static_CA_C01.txt'],
+tafel1FilenameList = [r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Ultra-tin-SRO-BTO-SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_04_CA_C01.txt',
+                      r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Ultra-tin-SRO-BTO-SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_06_CA_C01.txt',
+                      r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Ultra-tin-SRO-BTO-SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_08_CA_C01.txt',
+                      r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Ultra-tin-SRO-BTO-SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_10_CA_C01.txt',
+                      r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Ultra-tin-SRO-BTO-SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_12_CA_C01.txt',
+                      r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\Tafel-Ultra-tin-SRO-BTO-SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-continous_14_CA_C01.txt',
+                      ]
+tafel2FilenameList = [r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-05\Poed-up-Ultra Thin-SRO-BTO-SRO-NSTO-Graphite Counter-SCE Ref-1M KOH_05_CA_C01.txt',
+                      r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-05\Poed-up-Ultra Thin-SRO-BTO-SRO-NSTO-Graphite Counter-SCE Ref-1M KOH_07_CA_C01.txt',
+                      r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-05\Poed-up-Ultra Thin-SRO-BTO-SRO-NSTO-Graphite Counter-SCE Ref-1M KOH_09_CA_C01.txt',
+                      r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-05\Poed-up-Ultra Thin-SRO-BTO-SRO-NSTO-Graphite Counter-SCE Ref-1M KOH_11_CA_C01.txt',
+                      r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-05\Poed-up-Ultra Thin-SRO-BTO-SRO-NSTO-Graphite Counter-SCE Ref-1M KOH_13_CA_C01.txt',
+                      r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-05\Poed-up-Ultra Thin-SRO-BTO-SRO-NSTO-Graphite Counter-SCE Ref-1M KOH_15_CA_C01.txt',
+                      ]
+
+plotCA(tafel1FilenameList,
        14,
-       0.1734377200,
-       0.217,
-       ['1','2','3','4','5'],
-       r'TN-01-049-3, $V_{RHE}$ = -0.337')
+       0.18,
+       0.197,
+       'Tafel 1')
+plotCA(tafel2FilenameList,
+       14,
+       0.18,
+       0.197,
+       'Poled Up')
+
+
+tafel1 = getTafel(tafel1FilenameList,
+                  14,
+                  0.18,
+                  0.197)
+tafel2 = getTafel(tafel2FilenameList,
+                  14,
+                  0.18,
+                  0.197)
+
+plotTafel([tafel1,
+           tafel2],
+          ['Unpoled (?)',
+           'Poled-Up'],
+          'Ultra-Thin SRO-BTO-SRO-NSTO')
