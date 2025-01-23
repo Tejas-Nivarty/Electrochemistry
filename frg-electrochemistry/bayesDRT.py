@@ -162,28 +162,3 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None,saveData=False):
     plt.show()
     
     return finaldf
-
-# getDRT(r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\100 Cycles\GA240830-1_240911_LGE_p20_1_100Cycles_C01.mpt',
-#        freqRange=[400,np.inf])
-
-illge = plotCompareDRT([r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\Before Cycling\GA240830-1_240902_20um_IL-LGE_BeforeCycling.mpt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\Single Cycling\GA240830-1_240902_20um_IL-LGE_1-1_SingleCycle.mpt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\IL_LGE\100 Cycles\GA240830-1_240911_LGE_p20_1_100Cycles_C01.mpt'],
-               'DRT Comparison IL-LGE',
-               [40,200000],
-               legendList=['Before Cycling',
-                            'Single Cycle',
-                            '100 Cycles'],
-               saveData=True)
-baseline = plotCompareDRT([r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\Gen2_VC\240820_Li_Symm_20um_Gen2+VC_Before cycling_C01.mpt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\Gen2_VC\240820_Li_Symm_20um_Gen2+VC_1-1_SingleCycle_C01.mpt',
-                r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\Gen2_VC\240820_Li_Symm_20um_Gen2+VC_1-1_95Cycles_C01.mpt'],
-               'DRT Comparison Baseline',
-               [40,200000],
-               legendList=['Before Cycling',
-                'Single Cycle',
-                '95 Cycles'],
-               saveData=True)
-
-illge.to_csv(r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\DRT_and_Nyquist_Fits\DRT\IL-LGE-DRT',index=False)
-baseline.to_csv(r'C:\Users\tejas\Analysis\Potentiostat\Ganesh Files\DRT_and_Nyquist_Fits\DRT\Baseline-DRT',index=False)

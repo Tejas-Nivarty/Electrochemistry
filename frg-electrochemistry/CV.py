@@ -196,25 +196,3 @@ def buildEDLCList(folderName,number,pH,area,referencePotential,excludeLastX=0):
         edlcFiles = edlcFiles[excludeLastX:]
 
     return buildDataList(edlcFiles,pH,area,referencePotential)
-
-firstsampleCVList = [r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-04\HER-Ultrathin SRO-BTO-SRO-NSTO-1M KOH-Graphite Counter- SCE Ref-ext_02_CV_C01.txt',
-                     r'C:\Users\tejas\Analysis\Potentiostat\Pedram_Archive\2022-08-05\Poled-Up-2nd-Highvoltage-8V-Ultra Thin-SRO-BTO-SRO-NSTO-Graphite Counter-SCE Ref-1M KOH_15_CA_C01.txt'
-                    ]
-dataList = []
-
-for filename in firstsampleCVList:
-    
-    print(filename)
-    dataList.append(readCV(filename,
-                           14,
-                           0.18,
-                           0.197))
-    #guesses for parameters
-
-plotCompareCV(dataList,
-              ['1','2','3'],
-              'Title',
-              horizontalLine=True,
-              verticalLine=True,
-              currentdensity=True,
-              cycleList=[2,2,2])

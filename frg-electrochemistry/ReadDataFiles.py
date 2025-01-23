@@ -94,6 +94,9 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float): #a
     data['Ewe/mV'] = data['Ewe/V']*1000
     data['j/A*m-2'] = data['j/mA*cm-2']*10
     
+    #cleans data to remove points where Synology interferes with saving data
+    data = data[~((data['time/s'] == 0) & (data['I/mA'] == 0))]
+    
     return data
 
 def readPEISPandas(filename):
