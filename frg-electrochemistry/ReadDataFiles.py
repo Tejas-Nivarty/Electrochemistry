@@ -538,7 +538,6 @@ def readExcelSheet(filename):
     
     xl = pd.ExcelFile(filename)
 
-    foundValue = False
     for sheet_name in xl.sheet_names:
         
         try:
@@ -549,6 +548,7 @@ def readExcelSheet(filename):
         df = pd.read_excel(filename, sheet_name=sheet_name, header=None)
         
         # Search for the cell in this sheet
+        foundValue = False
         for row_idx, row in df.iterrows():
             for col_idx, value in enumerate(row):
                 if isinstance(value, str) and "Total H2 Generated (mol)" in value:

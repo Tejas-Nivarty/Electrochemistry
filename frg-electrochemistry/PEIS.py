@@ -6,7 +6,7 @@ from impedance.models.circuits import CustomCircuit
 from impedance.preprocessing import cropFrequencies, ignoreBelowX
 import os
 from pyDRTtools.runs import EIS_object, simple_run
-from scipy.fft import irfft, rfftfreq, rfft, ifft
+from scipy import fft
 import scipy as sc
 from OSC import plotWaveforms
 
@@ -281,8 +281,8 @@ def predictCurrent(peisFilename,voltageWaveformFilename,pH,area,referencePotenti
     
     dt = voltageWaveform['Time (s)'].diff().mean()
     
-    voltageFFT = rfft(voltageWaveform['RawVoltage (V)'].to_numpy())
-    voltageFFTFreq = rfftfreq(dataLength, dt)
+    voltageFFT = fft.rfft(voltageWaveform['RawVoltage (V)'].to_numpy())
+    voltageFFTFreq = fft.rfftfreq(dataLength, dt)
     currentFFT = np.zeros(voltageFFT.size,dtype=complex)
     
     for i in range(len(voltageFFT)):
@@ -294,7 +294,7 @@ def predictCurrent(peisFilename,voltageWaveformFilename,pH,area,referencePotenti
         
         currentFFT[i] = voltagePhasor/impedancePhasor #V/Z = I
         
-    currentSignal = irfft(currentFFT,n=dataLength)
+    currentSignal = fft.irfft(currentFFT,n=dataLength)
     
     dataframe = pd.DataFrame({'Time (s)':voltageWaveform['Time (s)'],
                               'Current (A)':currentSignal,
@@ -308,3 +308,90 @@ def predictCurrent(peisFilename,voltageWaveformFilename,pH,area,referencePotenti
     dataframe['Charge Density (mC/cm^2)'] = dataframe['Charge (C)']*1000/area
         
     return dataframe
+
+def getEISFromDynamicCA(filename, pH, area, referencePotential, irange, fundamental_freq_hz, cutoff, bode=False, stretch=1):
+    """
+    Calculate EIS from oscilloscope data. Experimental.
+    
+    Parameters:
+    -----------
+    filename : str
+        .csv file from oscilloscope
+    pH : float
+        pH of solution for RHE conversation
+    area : float
+        area of electrode in cm^2
+    referencePotential : float
+        potential of reference electrode
+    irange : str
+        acceptable is '2A', '1A', '100mA', '10mA'
+    fundamental_freq_hz : float
+        Frequency of the excitation waveform in Hz
+    cutoff : float
+        Cutoff frequency (see Bode plot to judge when noise becomes excessive)
+    bode (optional) : bool
+        Whether to plot bode plot or not
+    stretch (optional) : int
+        For reading waveform (see readOSC())
+        
+    Returns:
+    --------
+    output : pd.DataFrame('freq/Hz','Re(Z)/Ohm','-Im(Z)/Ohm')
+    """
+    
+    
+    df = readOSC(filename,pH,area,referencePotential,irange,stretch=stretch)
+    
+    # Get data
+    t = df['Time (s)'].values
+    v = df['Voltage (V)'].values
+    i = df['Current (A)'].values
+    
+    # Calculate sampling parameters
+    sample_rate = 1 / (t[1] - t[0])
+    total_time = t[-1] - t[0]
+    
+    # Calculate num_periods properly from actual time duration
+    num_periods = total_time * fundamental_freq_hz
+    print(f"Number of periods: {num_periods:.2f}")
+    
+    # Compute FFTs and normalize
+    v_fft = fft.rfft(v) / len(v)
+    i_fft = fft.rfft(i) / len(i)
+    
+    # Calculate impedance
+    Z = v_fft / i_fft
+    
+    # Generate frequency array
+    freqs = fft.rfftfreq(len(v), d=t[1]-t[0])
+    
+    # Take only positive frequencies up to cutoff
+    mask = (freqs > fundamental_freq_hz) & (freqs < cutoff)
+    freqs = freqs[mask]
+    Z = Z[mask]
+    
+    #converts to PEIS Pandas format
+    output = pd.DataFrame()
+    
+    output['freq/Hz'] = freqs
+    output['Re(Z)/Ohm'] = Z.real
+    output['-Im(Z)/Ohm'] = -Z.imag
+    
+    if bode:
+        #plots Bode plot
+        fig, ax1 = plt.subplots()
+        ax2 = ax1.twinx()
+        
+        ax1.semilogx(freqs, 20 * np.log10(np.abs(Z)),'k')
+        ax1.set_ylabel('|Z| (dB Ω)')
+        ax1.set_xlabel('Frequency (Hz)')
+        ax1.grid(True)
+        
+        ax2.semilogx(freqs, -np.angle(Z, deg=True),'r')
+        ax2.set_ylabel('-Phase (degrees)')
+        ax2.grid(True)
+        plt.show()
+        
+    #saves pandas dataframe
+        
+    return output

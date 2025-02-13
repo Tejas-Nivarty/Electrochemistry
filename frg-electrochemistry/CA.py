@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import linregress
 from math import log10
 from ReadDataFiles import readCA, colorFader, calculateIntegral
+import re
 
 def getTafel(filenameList,pH,area,referencePotential):
     
@@ -91,20 +92,88 @@ def plotCA(filenames,pH,area,referencePotential,title,legendList=None):
 
     return
 
-def integratePeaks(filenames):
+def integrateCA(filenames):
+    """Integrates CA data to find total charge transferred.
+
+    Args:
+        filenames (list[str]): List of CA filenames.
+
+    Returns:
+        dict[experimentNumber] = (mol e-, expTime (s)): Returns experiment time and moles transferred.
+    """
     
-    molesList = []
+    molesDict = {}
     
     for filename in filenames:
-        data = readCA(filename,14,0.1,0.197)
+        
+        data = readCA(filename,1,1,1)
+        
+        filename = filename.split('\\')[-1]
+        
+        experimentNumber = int(re.search(r'\d+', str(filename)).group())
         faradayConstant = 9.648533212331E4
         coulombsTransferred = calculateIntegral(data['time/s'],
                                                 data['I/mA']/1000,
                                                 0,
                                                 [-np.inf,np.inf])
         molesTransferred = coulombsTransferred/faradayConstant
-        print('{filename}: {moles} mol e-'.format(filename=filename,
-                                                  moles=molesTransferred))
+        experimentTime = data['time/s'].max()
+        molesDict[experimentNumber] = (molesTransferred,experimentTime)
         
     
-    return molesList
+    return molesDict
+
+def plotH2CA(h2Dict,electronDict,area,labels,title):
+    """Plots integrated CA charge and H2 generated.
+
+    Args:
+        h2Dict (dict[key]): Dictionary from readExcelSheet. Must match keys in electronDict.
+        electronDict (dict[key]): Dictionary from integrateCA. Must match keys in h2Dict.
+        area (float): Area of electrode in cm^2.
+        labels (list[str]): X-axis labels for experiments.
+        title (str): Graph title.
+    """
+    
+    h2prodList = []
+    h2errList = []
+    chargeList = []
+    fig, ax = plt.subplots()
+    
+    for key in h2Dict:
+        
+        h2prod, h2err = h2Dict[key]
+        charge, time = electronDict[key]
+        
+        h2prod = h2prod*1E9/time/area #nmol/s/cm^2
+        h2err = h2err*1E9/time/area #nmol/s/cm^2
+        charge = abs(charge*1E9/time/area/2) #nmol/s/cm^2, charge divided by 2 for stoich
+        
+        h2prodList.append(h2prod)
+        h2errList.append(h2err)
+        chargeList.append(charge)
+        
+    xList = [i+1 for i in range(len(h2Dict))]
+    
+    ax.errorbar(xList,
+                h2prodList,
+                yerr=h2errList,
+                fmt='o',
+                color='blue',
+                capsize=5,
+                capthick=1,
+                label=r'$H_2$ Generated')
+    ax.scatter(xList,
+               chargeList, 
+               color='goldenrod', 
+               label=r'$\frac{1}{2}e^-$ Transferred')
+    
+    ax.set(title = title,
+           ylabel = r'Mole Flux ($\frac{nmol}{cm^2\cdot s}$)',
+           xticks = xList,
+           xticklabels = labels,
+           ylim = [0,ax.get_ylim()[1]])
+    ax.legend()
+    
+    plt.show()
+    
+    return

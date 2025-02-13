@@ -102,19 +102,21 @@ def plotECSA(dataList,title,trasatti=False):
         dataSlicePositive = dataSlice[dataSlice['Scan Rate (V/s)'] > 0]
         scanRateList.append(dataSlicePositive['Scan Rate (V/s)'].mean())
         
-        #splits last cycle into oxidative and reductive currents
-        oxidativeCurrentSlice = dataSlice[dataSlice['ox/red'] == 1]
-        reductiveCurrentSlice = dataSlice[dataSlice['ox/red'] == 0]
+        #uses control voltage to split into anodic and cathodic sweeps
+        # Find the turning point (where voltage changes direction)
+        voltage_diff = np.diff(dataSlice['control/V'])
+        turn_idx = np.where(np.diff(np.signbit(voltage_diff)))[0][0]
+        # Split into forward and reverse scans
+        forwardSlice = dataSlice.iloc[:turn_idx+1]
+        reverseSlice = dataSlice.iloc[turn_idx:]
+        
         #finds maximum oxidative and maximum reductive current
-        #nlargest removes spikes and takes n largest value
-        maxOxidativeCurrent = oxidativeCurrentSlice['I/A'].abs().nlargest(5,keep='last').iloc[:-1].mean()
-        maxReductiveCurrent = reductiveCurrentSlice['I/A'].abs().nlargest(5,keep='last').iloc[:-1].mean()
-        #takes smaller of the peak oxidative and reductive currents (less faradaic contribution)
-        # if maxOxidativeCurrent > maxReductiveCurrent:
-        #     currentList.append(maxReductiveCurrent)
-        # else:
-        #     currentList.append(maxOxidativeCurrent)
-        currentList.append(maxOxidativeCurrent+maxReductiveCurrent/2)
+        forwardSliceLatestTimeIndex = forwardSlice['time/s'].idxmax()
+        reverseSliceLatestTimeIndex = reverseSlice['time/s'].idxmax()
+        #takes 9 largest values and removes last value to avoid spikes
+        steadyStateForwardCurrent = forwardSlice.loc[forwardSliceLatestTimeIndex-10:forwardSliceLatestTimeIndex-1]['I/A'].mean()
+        steadyStateReverseCurrent = reverseSlice.loc[reverseSliceLatestTimeIndex-10:reverseSliceLatestTimeIndex-1]['I/A'].mean()
+        currentList.append(abs(steadyStateForwardCurrent-steadyStateReverseCurrent)/2)
 
     if not trasatti:
         
@@ -185,7 +187,7 @@ def buildEDLCList(folderName,number,pH,area,referencePotential,excludeLastX=0):
             isEDLC = True
         elif (not twoDigit) and (file[0] == number):
             isEDLC = True
-        if file[-3:] != 'txt':
+        if (file[-3:] != 'txt') and (file[-3:] != 'mpt'):
             isEDLC = False
         if 'CA' in file:
             isEDLC = False
