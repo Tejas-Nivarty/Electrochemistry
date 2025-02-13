@@ -54,7 +54,7 @@ def plotFFT(datasets: list[tuple],legend,title):
     
     return
 
-def analyzeWaveform(pulse: pd.DataFrame, experimentLength: float, frequency: float, title: str):
+def analyzeWaveform(pulse: pd.DataFrame, experimentLength: float, frequency: float, title: str = None,plot=True):
     
     numberOfWaveforms = pulse['Time (s)'].max()*frequency
     period = 1/frequency
@@ -97,7 +97,9 @@ def analyzeWaveform(pulse: pd.DataFrame, experimentLength: float, frequency: flo
     totalChargeTransferred = pulse['Charge (C)'].iloc[-1]*experimentLength*frequency
     print('Total Charge Transferred: {} C'.format(totalChargeTransferred))
     
-    plotWaveform(pulse,title,jv=True)
+    
+    if plot:
+        plotWaveform(pulse,title,jv=True)
 
     return
 
@@ -202,6 +204,10 @@ def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv:
         ax.axvline(6.535,color='k',linestyle='--',zorder=0)
         ax.axvline(-0.335,color='k',linestyle='--',zorder=0)
         plt.show()
+    
+    return
+
+def getEISFromWaveform(pulse: pd.DataFrame):
     
     return
 

@@ -131,7 +131,7 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None,saveData=False):
         
         freq, Z = readBayesDRT2(filenames[i],freqRange)
         inv_hmc = Inverter(basis_freq=freq)
-        inv_hmc.fit(freq, Z, mode='sample',nonneg=True,outliers='auto')
+        inv_hmc.fit(freq, Z, mode='sample',nonneg=True,outliers=True)
         
         #use predict distribution, can adjust percentile to get error bars
         gammaMean = inv_hmc.predict_distribution(tau=timeConstantArray)

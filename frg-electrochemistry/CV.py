@@ -12,7 +12,7 @@ def plotOneCV(data,title):
     ax.axhline(0,color='k')
     ax.axvline(0,color='k')
     for i in range(1,numCycles+1):
-        color = colorFader('green','blue',i/numCycles)
+        color = colorFader('green','blue',0,1)
         dataSlice = data[data['cycle number'] == i]
         ax.plot(dataSlice['Ewe/V'],dataSlice['j/mA*cm-2'],color = color,label = 'Cycle '+str(i))
     ax.set(title = title,

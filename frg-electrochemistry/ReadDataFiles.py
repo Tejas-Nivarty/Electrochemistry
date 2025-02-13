@@ -2,24 +2,34 @@ import pandas as pd
 import numpy as np
 import matplotlib as mpl
 import scipy as sc
+import re
 
 
 def readCV(filename: str, pH: float, area: float, referencePotential: float): #area is in cm^2
     """Reads .txt file from biologic for cyclic voltammetry data.
 
     Args:
-        filename (str): .txt file from biologic. must be exported using "CV-all"
-        pH (float): pH of electrolyte for RHE
-        area (float): geometric area of electrode for current density
-        referencePotential (float): reference potential for RHE
+        filename (str): .txt file from biologic (must be exported using "CV-all") or .mpt file
+        pH (float): pH of electrolyte for RHE conversion
+        area (float): geometric area of electrode in cm^2 for current density
+        referencePotential (float): reference potential in V for RHE conversion
 
     Returns:
         pd.DataFrame: dataframe of CV data
     """
-    data = pd.read_csv(filename,
-                       sep='\s+',
-                       skiprows=1,
-                       names = ['mode',
+    
+    if filename[-3:] == 'mpt':
+        
+        #finds number of header lines
+        with open(filename, 'r') as file:
+            file.readline()
+            line = file.readline()
+            numHeaderLines = int(re.findall(r'-?\d*\.?\d+', line)[0])
+            
+        data = pd.read_csv(filename,
+                        sep='\s+',
+                        skiprows=numHeaderLines,
+                        names = ['mode',
                                 'ox/red',
                                 'error',
                                 'control changes',
@@ -27,18 +37,50 @@ def readCV(filename: str, pH: float, area: float, referencePotential: float): #a
                                 'time/s',
                                 'control/V',
                                 'Ewe/V',
+                                'Ece/V',
                                 'I/mA',
                                 'cycle number',
                                 '(Q-Qo)/C',
                                 'I Range',
-                                '<Ece>/V',
                                 'Analog IN 2/V',
                                 'Rcmp/Ohm',
-                                'P/W',
-                                'Ewe-Ece/V'],
-                       index_col=False,
-                       dtype = np.float64,
-                       engine='python')
+                                'step time/s',
+                                'Pwe/W',
+                                'Pce/W',
+                                'Pwe-ce/W',
+                                'Ewe-Ece/V',
+                                'Rew/Ohm',
+                                'Rce/Ohm',
+                                'Rwe-ce/Ohm'],
+                        index_col=False,
+                        dtype = np.float64,
+                        encoding='windows-1252')
+        
+    else:
+    
+        data = pd.read_csv(filename,
+                        sep='\s+',
+                        skiprows=1,
+                        names = ['mode',
+                                    'ox/red',
+                                    'error',
+                                    'control changes',
+                                    'counter inc.',
+                                    'time/s',
+                                    'control/V',
+                                    'Ewe/V',
+                                    'I/mA',
+                                    'cycle number',
+                                    '(Q-Qo)/C',
+                                    'I Range',
+                                    '<Ece>/V',
+                                    'Analog IN 2/V',
+                                    'Rcmp/Ohm',
+                                    'P/W',
+                                    'Ewe-Ece/V'],
+                        index_col=False,
+                        dtype = np.float64,
+                        engine='python')
     
     data['I/A'] = data['I/mA']/1000
     data['j/mA*cm-2'] = data['I/mA']/area
@@ -46,47 +88,107 @@ def readCV(filename: str, pH: float, area: float, referencePotential: float): #a
     data['Ewe/mV'] = data['Ewe/V']*1000
     data['j/A*m-2'] = data['j/mA*cm-2']*10
     
+    #cleans data to remove points where Synology interferes with saving data
+    data = data[~((data['time/s'] == 0) & (data['I/mA'] == 0))]
+    
     return data
 
 def readCA(filename: str, pH: float, area: float, referencePotential: float): #area is in cm^2
     """Reads chronoamperometry data into pandas dataframe.
 
     Args:
-        filename (str): filename of CA .txt. must've been exported using CA-all
+        filename (str): filename of CA .txt (must be exported using CA-all) or .mpt file
         pH (float): pH of solution for RHE
         area (float): geometric area of electrode in cm^2
-        referencePotential (float): reference potential for RHE
+        referencePotential (float): reference potential for RHE in V
 
     Returns:
-        _type_: _description_
+        pd.DataFrame: dataframe of CA data
     """
-    data = pd.read_csv(filename,
-                       sep='\s+',
-                       skiprows=1,
-                       names = ['mode',
-                                'ox/red',
-                                'error',
-                                'control changes',
-                                'Ns changes',
-                                'counter inc.',
-                                'Ns',
-                                'time/s',
-                                'control/V',
-                                'Ewe/V',
-                                'I/mA',
-                                'dQ/C',
-                                'I range',
-                                'Ece/V',
-                                'Analog IN 2/V',
-                                'Rcmp/Ohm',
-                                'Capacitance charge/muF',
-                                'Capacitance discharge/muF',
-                                'Efficiency/%',
-                                'cycle number',
-                                'P/W'],
-                       index_col=False,
-                       dtype = np.float64,
-                       encoding='unicode_escape')
+    
+    if filename[-3:] == 'mpt':
+        
+        #finds number of header lines
+        with open(filename, 'r') as file:
+            file.readline()
+            line = file.readline()
+            numHeaderLines = int(re.findall(r'-?\d*\.?\d+', line)[0])
+            
+        data = pd.read_csv(filename,
+                            sep='\s+',
+                            skiprows=numHeaderLines,
+                            names = ['mode',
+                                    'ox/red',
+                                    'error',
+                                    'control changes',
+                                    'Ns changes',
+                                    'counter inc.',
+                                    'Ns',
+                                    'time/s',
+                                    'control/V',
+                                    'Ewe/V',
+                                    'Ece/V',
+                                    'I/mA',
+                                    'dQ/C',
+                                    '(Q-Qo)/C',
+                                    'I range',
+                                    'Q charge/discharge/mA.h',
+                                    'half cycle',
+                                    'Analog IN 2/V',
+                                    'Energy we charge/W.h',
+                                    'Energy we discharge/W.h',
+                                    'Energy ce charge/W.h',
+                                    'Energy ce discharge/W.h',
+                                    'Capacitance charge/muF',
+                                    'Capacitance discharge/muF',
+                                    'step time/s',
+                                    'Q discharge/mA.h',
+                                    'Q charge/mA.h',
+                                    'Capacity/mA.h',
+                                    'Efficiency/%',
+                                    'cycle number',
+                                    'Pwe/W',
+                                    'Pce/W',
+                                    'Pwe-ce/W',
+                                    'Ewe-Ece/V',
+                                    'Rwe/Ohm',
+                                    'Rce/Ohm',
+                                    'Rwe-ce/Ohm',
+                                    'Energy we-ce charge/W.h',
+                                    'Energy we-ce dischage/W.h'],
+                            index_col=False,
+                            dtype = np.float64,
+                            encoding='windows-1252')
+            
+    else:
+    
+        data = pd.read_csv(filename,
+                        sep='\s+',
+                        skiprows=1,
+                        names = ['mode',
+                                    'ox/red',
+                                    'error',
+                                    'control changes',
+                                    'Ns changes',
+                                    'counter inc.',
+                                    'Ns',
+                                    'time/s',
+                                    'control/V',
+                                    'Ewe/V',
+                                    'I/mA',
+                                    'dQ/C',
+                                    'I range',
+                                    'Ece/V',
+                                    'Analog IN 2/V',
+                                    'Rcmp/Ohm',
+                                    'Capacitance charge/muF',
+                                    'Capacitance discharge/muF',
+                                    'Efficiency/%',
+                                    'cycle number',
+                                    'P/W'],
+                        index_col=False,
+                        dtype = np.float64,
+                        encoding='unicode_escape')
     
 
     data['j/mA*cm-2'] = data['I/mA']/area
@@ -106,12 +208,19 @@ def readPEISPandas(filename):
         filename (str): filename of PEIS .txt (must be exported using PEIS-all) or PEIS .mpt
 
     Returns:
-        pd.DataFrame: dataframe containing PEIS experiment
+        pd.DataFrame: dataframe of PEIS data
     """
     if filename[-3:] == 'mpt':
+        
+        #finds number of header lines
+        with open(filename, 'r') as file:
+            file.readline()
+            line = file.readline()
+            numHeaderLines = int(re.findall(r'-?\d*\.?\d+', line)[0])
+            
         data = pd.read_csv(filename,
                         sep='\s+',
-                        skiprows=71,
+                        skiprows=numHeaderLines,
                         names = ['freq/Hz',
                                 'Re(Z)/Ohm',
                                 '-Im(Z)/Ohm',
@@ -128,6 +237,17 @@ def readPEISPandas(filename):
                                 '|I|/A',
                                 'Ns',
                                 '(Q-Qo)/mA.h',
+                                '<Ece>/V',
+                                '|Ece|/V',
+                                'Phase(Zce)/deg',
+                                '|Zce|/Ohm',
+                                'Re(Zce)/Ohm',
+                                '-Im(Zce)/Ohm',
+                                'Phase(Zwe-ce)/deg',
+                                '|Zwe-ce|/Ohm',
+                                'Re(Zwe-ce)/Ohm',
+                                '-Im(Zwe-ce)/Ohm',
+                                'Analog IN 2/V',
                                 'Re(Y)/Ohm-1',
                                 'Im(Y)/Ohm-1',
                                 '|Y|/Ohm-1',
@@ -144,7 +264,7 @@ def readPEISPandas(filename):
                                 'Im(Permittivity)',
                                 '|Permittivity|',
                                 'Phase(Permittivity)/deg',
-                                'Re(Resistivity)/Ohm',
+                                'Re(Resistivity)/Ohm.cm',
                                 'Im(Resistivity)/Ohm.cm',
                                 '|Resistivity|/Ohm.cm',
                                 'Phase(Resistivity)/deg',
@@ -155,9 +275,14 @@ def readPEISPandas(filename):
                                 'Tan(Delta)',
                                 'Loss Angle(Delta)/deg',
                                 'dq/mA.h',
-                                'x',
                                 'Pwe/W',
-                                'Rwe/Ohm'],
+                                'Pce/W',
+                                'Pwe-ce/W',
+                                '<Ewe-Ece>/V',
+                                'Rwe/Ohm',
+                                'Rce/Ohm',
+                                'Rwe-ce/Ohm',
+                                'Ewe-Ece/V'],
                         index_col=False,
                         dtype = np.float64,
                         encoding='windows-1252')
@@ -189,6 +314,9 @@ def readPEISPandas(filename):
                         index_col=False,
                         dtype = np.float64,
                         encoding='unicode_escape')
+        
+    #cleans data to remove points where Synology interferes with saving data
+    data = data[~((data['time/s'] == 0) & (data['<I>/mA'] == 0))]
     
     return data
 
@@ -232,7 +360,7 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
         pH (float): pH of electrolyte for RHE
         area (float): geometric area of electrode in cm^2
         referencePotential (float): reference potential for RHE
-        irange (str): irange of measurement, '1 A', '100 mA', '10 mA' are acceptable
+        irange (str): irange of measurement, '2A', '1A', '100mA', '10mA' are acceptable
         stretch (float, optional): For 1 Hz, typically 4, for 10 Hz, typically 2. Defaults to 1.
 
     Returns:
@@ -240,13 +368,14 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
     """
     with open(filename,'r') as file:
         lines = file.readlines()
-        timeUnit = lines[1][1:3]
         firstChannel = lines[0][33]
+        unitsList = lines[1].split(',')
+        unitsList = [i.replace('(','').replace(')','') for i in unitsList]
+        timeUnit = unitsList[0]
+        voltage1Unit = unitsList[3]
+        voltage2Unit = unitsList[4]
         
-    if firstChannel == 'A':
-        names = ['Time (xs)','discard1','discard2','Voltage (V)','Current (A)']
-    else:
-        names = ['Time (xs)','discard1','discard2','Current (A)','Voltage (V)']
+    names = ['Time (xs)','discard1','discard2','ch1Avg','ch2Avg']
     
     data = pd.read_csv(filename,
                        skiprows=3,
@@ -255,13 +384,28 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
                        index_col=False,
                        dtype=float)
     
+    #ensures correct units
+    if voltage1Unit == 'mV':
+        data['ch1Avg'] = data['ch1Avg'] / 1000
+    if voltage2Unit == 'mV':
+        data['ch2Avg'] = data['ch2Avg'] / 1000
+    
     #ensures time starts at 0
     data['Time (xs)'] = data['Time (xs)'] - data['Time (xs)'].loc[0]
     
+    #sets proper units of time
     if timeUnit == 'ms':
         data['Time (ms)'] = data['Time (xs)']
     elif timeUnit == 'us':
         data['Time (ms)'] = data['Time (xs)']/1000
+        
+    #ensures correct labels
+    if firstChannel == 'A':
+        data['Voltage (V)'] = data['ch1Avg']
+        data['Current (A)'] = data['ch2Avg']
+    else:
+        data['Voltage (V)'] = data['ch2Avg']
+        data['Current (A)'] = data['ch1Avg']
     
     data['Time (ms)'] *= stretch
     data = data[data['Time (ms)'] < (data['Time (ms)'].max()/stretch)]
@@ -285,7 +429,7 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
     data['Current (mA)'] = data['Current (A)']*1000
     data['Current Density (mA/cm^2)'] = data['Current (mA)']/area
     
-    data = data.drop(['discard1','discard2','Time (xs)'],axis=1)
+    data = data.drop(['discard1','discard2','Time (xs)','ch1Avg','ch2Avg'],axis=1)
 
     return data
 
@@ -378,3 +522,43 @@ def readBayesDRT2(filename,freqRange):
     Z = data['Re(Z)/Ohm'].values - 1j * data['-Im(Z)/Ohm'].values
     
     return freq, Z
+
+def readExcelSheet(filename):
+    """Gets H2 produced from Excel sheet. First ensure that the Excel sheet contains the correct analysis
+    and that the Excel sheet names start with the experiment number.
+
+    Args:
+        filename (str): .xlsx file from GC data
+        
+    Returns:
+        dict[experimentNumber] = (H2 Value (mol), H2 Error (mol)): {int,(np.float64,np.float64)}
+    """
+    
+    finalDict = {}
+    
+    xl = pd.ExcelFile(filename)
+
+    foundValue = False
+    for sheet_name in xl.sheet_names:
+        
+        try:
+            experimentNumber = int(re.search(r'\d+', str(sheet_name)).group())
+        except:
+            continue
+        
+        df = pd.read_excel(filename, sheet_name=sheet_name, header=None)
+        
+        # Search for the cell in this sheet
+        for row_idx, row in df.iterrows():
+            for col_idx, value in enumerate(row):
+                if isinstance(value, str) and "Total H2 Generated (mol)" in value:
+                    h2prod = np.float64(df.iloc[row_idx, col_idx + 1])
+                    h2err = np.float64(df.iloc[row_idx, col_idx + 2])
+                    foundValue = True
+                    break
+            if foundValue:
+                break
+            
+        finalDict[experimentNumber] = (h2prod,h2err)
+    
+    return finalDict
