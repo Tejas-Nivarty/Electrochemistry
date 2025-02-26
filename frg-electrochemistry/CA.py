@@ -123,7 +123,7 @@ def integrateCA(filenames):
     
     return molesDict
 
-def plotH2CA(h2Dict,electronDict,area,labels,title):
+def plotH2CA(h2Dict,electronDict,area,title,labels=None):
     """Plots integrated CA charge and H2 generated.
 
     Args:
@@ -167,11 +167,17 @@ def plotH2CA(h2Dict,electronDict,area,labels,title):
                color='goldenrod', 
                label=r'$\frac{1}{2}e^-$ Transferred')
     
-    ax.set(title = title,
-           ylabel = r'Mole Flux ($\frac{nmol}{cm^2\cdot s}$)',
-           xticks = xList,
-           xticklabels = labels,
-           ylim = [0,ax.get_ylim()[1]])
+    if labels != None:
+        ax.set(title = title,
+            ylabel = r'Mole Flux ($\frac{nmol}{cm^2\cdot s}$)',
+            xticks = xList,
+            xticklabels = labels,
+            ylim = [0,ax.get_ylim()[1]])
+    else:
+        ax.set(title = title,
+            ylabel = r'Mole Flux ($\frac{nmol}{cm^2\cdot s}$)',
+            ylim = [0,ax.get_ylim()[1]])
+        
     ax.legend()
     
     plt.show()

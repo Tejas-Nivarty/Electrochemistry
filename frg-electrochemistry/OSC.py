@@ -6,6 +6,7 @@ plt.rcParams['font.size'] = 12
 import matplotlib as mpl
 from ReadDataFiles import readOSC, readRawWaveform, colorFader, calculateIntegral
 import argparse
+import datashader as ds
 
 def fft(data: pd.DataFrame,dataLabel: str):
     
@@ -30,6 +31,7 @@ def plotFFT(datasets: list[tuple],legend,title):
     fig, ax = plt.subplots()
     maxMagnitude = 0
     
+    #replace with datashader
     for i, data in enumerate(datasets):
         
         color = colorFader('blue','red',i,len(datasets))
