@@ -63,14 +63,18 @@ def plotTafel(tafelList: list[tuple],legendList,title,colors=None):
     
     return
 
-def plotCA(filenames,pH,area,referencePotential,title,legendList=None):
+def plotCA(filenames,pH,area,referencePotential,title,legendList=None,filter: list[bool] = False):
     
     fig, ax = plt.subplots()
     thermodynamicPotential = 0 #V vs. RHE
     
     for i, filename in enumerate(filenames):
         
-        data = readCA(filename,pH,area,referencePotential)
+        if filter == False:
+            data = readCA(filename,pH,area,referencePotential)
+        else:
+            data = readCA(filename,pH,area,referencePotential,shouldRemoveNoise=filter[i])
+            
         color = colorFader('blue','red',i,len(filenames))
         if legendList == None:
             overpotential = (thermodynamicPotential-data['Ewe/mV'].mean())
@@ -92,11 +96,12 @@ def plotCA(filenames,pH,area,referencePotential,title,legendList=None):
 
     return
 
-def integrateCA(filenames):
+def integrateCA(filenames,filter=False):
     """Integrates CA data to find total charge transferred.
 
     Args:
         filenames (list[str]): List of CA filenames.
+        filter (list[bool]), optional: No filter by default, but selects which CAs to apply the noise filter to.
 
     Returns:
         dict[experimentNumber] = (mol e-, expTime (s)): Returns experiment time and moles transferred.
@@ -104,9 +109,12 @@ def integrateCA(filenames):
     
     molesDict = {}
     
-    for filename in filenames:
+    for i, filename in enumerate(filenames):
         
-        data = readCA(filename,1,1,1)
+        if filter == False:
+            data = readCA(filename,1,1,1)
+        else:
+            data = readCA(filename,1,1,1,shouldRemoveNoise=filter[i])
         
         filename = filename.split('\\')[-1]
         
@@ -139,7 +147,7 @@ def plotH2CA(h2Dict,electronDict,area,title,labels=None):
     chargeList = []
     fig, ax = plt.subplots()
     
-    for key in h2Dict:
+    for key in electronDict:
         
         h2prod, h2err = h2Dict[key]
         charge, time = electronDict[key]
@@ -152,7 +160,7 @@ def plotH2CA(h2Dict,electronDict,area,title,labels=None):
         h2errList.append(h2err)
         chargeList.append(charge)
         
-    xList = [i+1 for i in range(len(h2Dict))]
+    xList = [i+1 for i in range(len(electronDict))]
     
     ax.errorbar(xList,
                 h2prodList,

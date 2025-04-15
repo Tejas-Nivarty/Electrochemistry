@@ -6,18 +6,17 @@ import re
 
 
 def readCV(filename: str, pH: float, area: float, referencePotential: float): #area is in cm^2
-    """Reads .txt file from biologic for cyclic voltammetry data.
+    """Reads cyclic voltammetry data from Biologic into Pandas dataframe.
 
     Args:
-        filename (str): .txt file from biologic (must be exported using "CV-all") or .mpt file
+        filename (str): filename of CV .txt from biologic (must be exported using "CV-all") or .mpt file
         pH (float): pH of electrolyte for RHE conversion
         area (float): geometric area of electrode in cm^2 for current density
-        referencePotential (float): reference potential in V for RHE conversion
+        referencePotential (float): potential of reference electrode vs. SHE in V
 
     Returns:
         pd.DataFrame: dataframe of CV data
     """
-    
     if filename[-3:] == 'mpt':
         
         #finds number of header lines
@@ -93,14 +92,15 @@ def readCV(filename: str, pH: float, area: float, referencePotential: float): #a
     
     return data
 
-def readCA(filename: str, pH: float, area: float, referencePotential: float): #area is in cm^2
-    """Reads chronoamperometry data into pandas dataframe.
+def readCA(filename: str, pH: float, area: float, referencePotential: float, shouldRemoveNoise: bool = False): #area is in cm^2
+    """Reads chronoamperometry data from Biologic into pandas dataframe.
 
     Args:
-        filename (str): filename of CA .txt (must be exported using CA-all) or .mpt file
-        pH (float): pH of solution for RHE
-        area (float): geometric area of electrode in cm^2
-        referencePotential (float): reference potential for RHE in V
+        filename (str): filename of CV .txt from biologic (must be exported using "CV-all") or .mpt file
+        pH (float): pH of electrolyte for RHE conversion
+        area (float): geometric area of electrode in cm^2 for current density
+        referencePotential (float): potential of reference electrode vs. SHE in V
+        shouldRemoveNoise (bool): if true, will remove standard noise using ReadDataFiles.removeNoise
 
     Returns:
         pd.DataFrame: dataframe of CA data
@@ -190,6 +190,8 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float): #a
                         dtype = np.float64,
                         encoding='unicode_escape')
     
+    if shouldRemoveNoise:
+        data = removeNoise(data)
 
     data['j/mA*cm-2'] = data['I/mA']/area
     data['Ewe/V'] = data['Ewe/V'] + referencePotential + 0.059*pH
@@ -201,8 +203,8 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float): #a
     
     return data
 
-def readPEISPandas(filename):
-    """Reads PEIS into pandas dataframe. Works with .mpt files as well.
+def readPEIS(filename: str):
+    """Reads potentiostatic electrochemical impedance spectroscopy data from Biologic into pandas dataframe.
 
     Args:
         filename (str): filename of PEIS .txt (must be exported using PEIS-all) or PEIS .mpt
@@ -320,25 +322,25 @@ def readPEISPandas(filename):
     
     return data
 
-def readPEIS(filename: str):
+def readPEISImpedance(filename: str):
     """Reads PEIS directly into format that impedance.py can use.
 
     Args:
-        filename (str): filename of PEIS .txt (must be exported using PEIS-all)
+        filename (str): filename of PEIS .txt (must be exported using PEIS-all) or PEIS .mpt
 
     Returns:
-        tuple(np.ndarray(float),np.ndarray(complex)): frequency, complex impedance values
+        tuple(np.ndarray(float),np.ndarray(complex)): (frequency, complex impedance)
     """
-    return convertToImpedanceAnalysis(readPEISPandas(filename))
+    return convertToImpedanceAnalysis(readPEIS(filename))
 
 def convertToImpedanceAnalysis(data: pd.DataFrame):
     """Converts to format that impedance.py can use.
 
     Args:
-        filename (pd.DataFrame): Output of readPEISPandas(filename).
+        data (pd.DataFrame): Output of ReadDataFiles.readPEIS.
 
     Returns:
-        tuple: (np.ndarray(float),np.ndarray(complex))
+        tuple(np.ndarray(float),np.ndarray(complex)): (frequency, complex impedance)
     """
     frequency = data['freq/Hz'].to_numpy()
     dataLength = len(frequency)
@@ -356,11 +358,11 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
     """Reads oscilloscope .csv from Picoscope.
 
     Args:
-        filename (str): filename of oscilloscope .csv from Picoscope
-        pH (float): pH of electrolyte for RHE
-        area (float): geometric area of electrode in cm^2
-        referencePotential (float): reference potential for RHE
-        irange (str): irange of measurement, '2A', '1A', '100mA', '10mA' are acceptable
+        filename (str): filename of waveform .csv from Picoscope
+        pH (float): pH of electrolyte for RHE conversion
+        area (float): geometric area of electrode in cm^2 for current density
+        referencePotential (float): potential of reference electrode vs. SHE in V
+        irange (str): irange of measurement; '2A', '1A', '100mA', '10mA' are acceptable
         stretch (float, optional): For 1 Hz, typically 4, for 10 Hz, typically 2. Defaults to 1.
 
     Returns:
@@ -434,12 +436,12 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
     return data
 
 def readRawWaveform(filename: str, pH: float, referencePotential: float):
-    """Reads waveform generated by makeWaveform.py
+    """Reads waveforms that Siglent can read into a Pandas DataFrame.
 
     Args:
-        filename (str): filename of waveform .csv
-        pH (float): pH of solution for RHE
-        referencePotential (float): reference potential for RHE
+        filename (str): filename of waveform .csv from makeWaveform.py or from Siglent software.
+        pH (float): pH of electrolyte for RHE conversion
+        referencePotential (float): potential of reference electrode vs. SHE in V
 
     Returns:
         pd.DataFrame: dataframe with 'Time (s)', 'Time (ms)', 'RawVoltage (V)', 'Voltage (V)'
@@ -461,7 +463,7 @@ def readRawWaveform(filename: str, pH: float, referencePotential: float):
     return data
 
 def readDRT(filename: str):
-    """Reads DRT generated by pyDRTTools
+    """Reads DRT generated by pyDRTTools.
 
     Args:
         filename (str): filename of DRT .csv
@@ -481,7 +483,7 @@ def colorFader(c1: str,c2: str,currentIndex: int, totalIndices: int):
     Args:
         c1 (str): color of first index
         c2 (str): color of last index
-        currentIndex (int): color of first index
+        currentIndex (int): index to linearly interpolate between colors (1 is c1, totalIndices is c2)
         totalIndices (int): total number of indices
 
     Returns:
@@ -495,8 +497,78 @@ def colorFader(c1: str,c2: str,currentIndex: int, totalIndices: int):
     c2=np.array(mpl.colors.to_rgb(c2))
     return mpl.colors.to_hex((1-mix)*c1 + mix*c2)
 
-def calculateIntegral(timeSeries,valueSeries,baseline,timeBounds):
+def removeNoise(df: pd.DataFrame, fundamental_freq: float = 0.46, Q: float =1):
+    """
+    Apply multiple notch filters to remove a fundamental frequency and its harmonics
+    from an electrochemical signal.
     
+    Parameters:
+    ----------
+    df : pandas.DataFrame
+        DataFrame containing at least 'time/s' and 'I/mA' columns
+    fundamental_freq : float, optional
+        The fundamental frequency to remove in Hz, default is 0.46 Hz
+    Q : float, optional
+        Quality factor for the notch filters. Higher values create narrower notches.
+        Default is 30.
+        
+    Returns:
+    -------
+    pandas.DataFrame
+        A copy of the input DataFrame with filtered 'I/mA' values
+    """
+    # Make a copy of the input DataFrame to avoid modifying the original
+    filtered_df = df.copy()
+    
+    # Extract the time and current data
+    time = df['time/s'].values
+    current = df['I/mA'].values
+    
+    # Calculate sampling frequency from the time data
+    # Using median difference to handle potential irregularities in sampling
+    time_diffs = np.diff(time)
+    dt = np.median(time_diffs)
+    fs = 1/dt
+    
+    # Apply notch filter for fundamental and each harmonic
+    filtered_current = current.copy()
+    
+    frequencies_removed = []
+    
+    belowNyquistFreq = True
+    i = 1
+    while belowNyquistFreq:
+        target_freq = i * fundamental_freq
+        
+        # Skip if the frequency is above Nyquist frequency
+        if target_freq > fs/2:
+            belowNyquistFreq = False
+            break
+        
+        # Create and apply the notch filter
+        b, a = sc.signal.iirnotch(target_freq, Q, fs)
+        filtered_current = sc.signal.filtfilt(b, a, filtered_current)
+        
+        frequencies_removed.append(target_freq)
+        i += 1
+    
+    # Update the DataFrame with the filtered data
+    filtered_df['I/mA'] = filtered_current
+    
+    return filtered_df
+
+def calculateIntegral(timeSeries: pd.Series, valueSeries: pd.Series, baseline: float, timeBounds: list[float]):
+    """Calculates 1D integral of (valueSeries-baseline) over timeSeries bounded by timeBounds.
+
+    Args:
+        timeSeries (pd.Series): x-values of integration
+        valueSeries (pd.Series): y-values of integration
+        baseline (float): amount to subtract valueSeries by
+        timeBounds (list[float]): [0] is lower bound, [1] is upper bound
+
+    Returns:
+        float: value of integral
+    """
     #truncates timeSeries and valueSeries according to timeBounds
     timeSeries = timeSeries[(timeSeries >= timeBounds[0]) & (timeSeries <= timeBounds[1])]
     valueSeries = valueSeries.loc[timeSeries.first_valid_index():timeSeries.last_valid_index()]
@@ -507,28 +579,29 @@ def calculateIntegral(timeSeries,valueSeries,baseline,timeBounds):
     #integrates
     return sc.integrate.trapezoid(y=valueSeries,x=timeSeries)
 
-def readBayesDRT2(filename,freqRange):
-    """Reads filename into BayesDRT2 format.
+def readBayesDRT2(filename: str, freqRange: list[float]):
+    """Reads .txt or .mpt file for PEIS from Biologic into freq, Z for bayesDRT2 library
 
     Args:
-        filename (_type_): _description_
+        filename (str): filename of PEIS .txt (must be exported using PEIS-all) or PEIS .mpt
+        freqRange (list[float]): [lowerFreq,upperFreq] defines frequency range to read file over
 
     Returns:
-        _type_: _description_
+        tuple(np.ndarray(float),np.ndarray(complex)): (frequency, complex impedance)
     """
-    data = readPEISPandas(filename)
+    data = readPEIS(filename)
     data = data[(data['freq/Hz'] >= freqRange[0]) & (data['freq/Hz'] <= freqRange[1])]
     freq = data['freq/Hz'].values
     Z = data['Re(Z)/Ohm'].values - 1j * data['-Im(Z)/Ohm'].values
     
     return freq, Z
 
-def readExcelSheet(filename):
-    """Gets H2 produced from Excel sheet. First ensure that the Excel sheet contains the correct analysis
+def readExcelSheet(filename: str):
+    """Gets H2 produced from Excel sheet. Ensure that the Excel sheet contains the correct analysis
     and that the Excel sheet names start with the experiment number.
 
     Args:
-        filename (str): .xlsx file from GC data
+        filename (str): .xlsx file with GC data
         
     Returns:
         dict[experimentNumber] = (H2 Value (mol), H2 Error (mol)): {int,(np.float64,np.float64)}
@@ -562,3 +635,40 @@ def readExcelSheet(filename):
         finalDict[experimentNumber] = (h2prod,h2err)
     
     return finalDict
+
+def readOCV(filename: str, pH: float, referencePotential: float):
+    """Reads open circuit potential .mpt file from Biologic.
+
+    Args:
+        filename (str): Filename of .mpt file from Biologic OCV experiment.
+        pH (float): pH of electrolyte for RHE conversion
+        referencePotential (float): potential of reference electrode vs. SHE in V
+
+    Returns:
+        pd.DataFrame: Contains 'mode', 'error', 'Ewe/V', 'Ece/V', 'Analog IN 2/V', 'Ewe/mV'
+    """
+    #finds number of header lines
+    with open(filename, 'r') as file:
+        file.readline()
+        line = file.readline()
+        numHeaderLines = int(re.findall(r'-?\d*\.?\d+', line)[0])
+        
+    data = pd.read_csv(filename,
+                        sep='\s+',
+                        skiprows=numHeaderLines,
+                        names = ['mode',
+                                 'error',
+                                 'time/s',
+                                 'Ewe/V',
+                                 'Ece/V',
+                                 'Analog IN 2/V',
+                                 'Ewe-Ece/V'],
+                        index_col=False,
+                        dtype = np.float64,
+                        encoding='windows-1252')
+    
+    data['Ewe/V'] = data['Ewe/V'] + referencePotential + 0.059*pH
+    data['Ece/V'] = data['Ece/V'] + referencePotential + 0.059*pH
+    data['Ewe/mV'] = data['Ewe/V']*1000
+    
+    return data

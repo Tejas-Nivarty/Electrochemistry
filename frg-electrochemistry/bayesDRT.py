@@ -147,10 +147,10 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None,saveData=False):
         
         if saveData:
             
-            finaldf['TimeConstant(s)'] = timeConstantArray
-            finaldf['gammaLo(Ohm)'] = gammaLo
-            finaldf['gammaHi(Ohm)'] = gammaHi
-            finaldf['gammaMean(Ohm)'] = gammaMean
+            finaldf[legendList[i]+' TimeConstant(s)'] = timeConstantArray
+            finaldf[legendList[i]+' gammaLo(Ohm)'] = gammaLo
+            finaldf[legendList[i]+' gammaHi(Ohm)'] = gammaHi
+            finaldf[legendList[i]+' gammaMean(Ohm)'] = gammaMean
         
         continue
     
