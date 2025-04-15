@@ -4,7 +4,14 @@ decimal.getcontext().Emax = 1000000000
 import math
 
 def roundToNearestEvenInteger(number: float):
-    
+    """Rounds a float to the nearest even integer. Helper function for makeWaveform().
+
+    Args:
+        number (float): Any real number.
+
+    Returns:
+        int: Nearest even integer to number.
+    """
     round1 = math.floor(number)
     round2 = math.ceil(number)
     
@@ -13,8 +20,20 @@ def roundToNearestEvenInteger(number: float):
     else:
         return int(round2)
 
-def makeWaveform(pulseWidth,frequency,faradaicBias,upBias,dnBias,oldWFG):
-    
+def makeWaveform(pulseWidth: float, frequency: float, faradaicBias: float, upBias: float, dnBias: float, oldWFG: bool):
+    """Makes pulsing waveform that Siglent waveform generator can read.
+
+    Args:
+        pulseWidth (float): Width of up and down pulses in seconds.
+        frequency (float): Frequency of waveform in Hertz.
+        faradaicBias (float): Faradaic bias in waveform in V.
+        upBias (float): Bias of up pulse in V.
+        dnBias (float): Bias of down pulse in V.
+        oldWFG (bool): If true, designs waveform for older Siglent, if false, designs waveform for newer Siglent.
+
+    Returns:
+        str: Confirmation of creation or failure reason.
+    """
     if oldWFG:
         maxSamples = 16384
         maxRate = 150e6

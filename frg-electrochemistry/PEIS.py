@@ -1,4 +1,4 @@
-from ReadDataFiles import readPEIS, colorFader, readPEISPandas, readRawWaveform, readOSC
+from ReadDataFiles import readPEIS, colorFader, readPEISImpedance, readRawWaveform, readOSC
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -11,11 +11,11 @@ import scipy as sc
 from OSC import plotWaveforms
 
 def plotOneBode(data,title):
-    """Takes dataframe from readPEISPandas. May rewrite in the future to accept f, Z values.
+    """Takes dataframe from readPEIS and plots Bode plot.
 
     Args:
-        data (pd.DataFrame): From readPEISPandas.
-        title (str): title + ' Bode Plot'
+        data (pd.DataFrame): From readPEIS
+        title (str): title + ' Bode Plot' will be title of plot
     """
     fig, ax = plt.subplots()
     ax2 = ax.twinx()
@@ -60,7 +60,7 @@ def generateCircuitFit(f,Z):
 def plotOneNyquist(filename,title,freqRange,fitModel=False,circuitString = None,initialGuess=[],bounds=([],[])):
     
     fig, ax = plt.subplots()
-    f, Z = readPEIS(filename)
+    f, Z = readPEISImpedance(filename)
     f, Z = cropFrequencies(f,Z,freqRange[0],freqRange[1])
     if fitModel:
         circuit = CustomCircuit(circuitString,initial_guess=initialGuess)
@@ -91,7 +91,7 @@ def plotCompareNyquist(filenames,title,freqRange,fitModel=False,circuitString=No
     for i in range(0,numberOfPlots):
         
         #gets f and Z values
-        f, Z = readPEIS(filenames[i])
+        f, Z = readPEISImpedance(filenames[i])
         
         #crops frequencies
         f, Z = cropFrequencies(f,Z,freqRange[0],freqRange[1])
@@ -198,7 +198,7 @@ def plotCircuitProperties(circuitList,legendList,saveData=False):
 
 def convertToPyDRTTools(filename:str,freqRange: list[float]):
     
-    data = readPEISPandas(filename)
+    data = readPEIS(filename)
     data['Im(Z)/Ohm'] = -data['-Im(Z)/Ohm']   
     data = data[(data['freq/Hz'] >= freqRange[0]) & (data['freq/Hz'] <= freqRange[1])] 
     data.to_csv(filename[:-4]+'.csv',
@@ -234,7 +234,7 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None,rbf_type='Gaussian'
     
     for i in range(0,numberOfPlots):
         
-        data = readPEISPandas(filenames[i])
+        data = readPEIS(filenames[i])
         data['Im(Z)/Ohm'] = -data['-Im(Z)/Ohm']   
         data = data[(data['freq/Hz'] >= freqRange[0]) & (data['freq/Hz'] <= freqRange[1])] 
         
@@ -270,7 +270,7 @@ def predictCurrent(peisFilename,voltageWaveformFilename,pH,area,referencePotenti
     DCOffset = referencePotential + 0.059*pH
     
     #use only seconds and hertz for units to work out
-    peisData = readPEISPandas(peisFilename)
+    peisData = readPEIS(peisFilename)
     peisData = peisData.sort_values('freq/Hz')
     if 'f_' in voltageWaveformFilename:
         voltageWaveform = readRawWaveform(voltageWaveformFilename,pH,referencePotential)
