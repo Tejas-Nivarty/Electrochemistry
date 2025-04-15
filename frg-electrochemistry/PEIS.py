@@ -1,4 +1,4 @@
-from ReadDataFiles import readPEIS, colorFader, readPEISImpedance, readRawWaveform, readOSC
+from ReadDataFiles import readPEIS, colorFader, readRawWaveform, readOSC, convertToImpedanceAnalysis
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -10,57 +10,48 @@ from scipy import fft
 import scipy as sc
 from OSC import plotWaveforms
 
-def plotOneBode(data,title):
-    """Takes dataframe from readPEIS and plots Bode plot.
+def plotOneBode(data: pd.DataFrame, title: str):
+    """Plots a Bode plot from EIS data.
 
     Args:
-        data (pd.DataFrame): From readPEIS
-        title (str): title + ' Bode Plot' will be title of plot
+        data (pd.DataFrame): EIS data from readPEIS
+        title (str): title of sample
+
+    Returns:
+        tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
     """
-    fig, ax = plt.subplots()
-    ax2 = ax.twinx()
-    ax.set_xscale('log')
-    ax.plot(data['freq/Hz'],data['|Z|/Ohm'],'k')
-    ax.set_yscale('log')
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+    ax1.set_xscale('log')
+    ax1.plot(data['freq/Hz'],data['|Z|/Ohm'],'k')
+    ax1.set_yscale('log')
     ax2.plot(data['freq/Hz'],-data['Phase(Z)/deg'],'r')
-    ax.set(title = title + ' Bode Plot',
+    ax1.set(title = title + ' Bode Plot',
            xlabel = 'Frequency (Hz)',
            ylabel = 'Magnitude ($\Omega$)')
     ax2.set(ylabel = '-Phase (deg)')
     
     plt.show()
     
-    return
+    return (fig, [ax1, ax2])
 
-def generateCircuitFit(f,Z):
-    """Takes in data from convertToImpedanceAnalysis and fits it to a specific circuit.
+def plotOneNyquist(eisData: pd.DataFrame, title: str, freqRange: list[float], fitModel: bool = False, circuitString: str = None, initialGuess: list[float] = [], bounds: tuple[list[float]] = ([],[])):
+    """Takes EIS data and plots Nyquist.
 
     Args:
-        f (np.ndarray[float]): frequencies
-        Z (np.ndarray[complex]): impedances
-        
-    Returns:
-        circuit (CustomCircuit): can use this to plot
-    """
-    #generates circuit model
-    circuit = 'p(p(R1,C1),p(R2,CPE2))-R0'
-    initialGuess = [400,50e-6,0,0,1,6]
-    circuit = CustomCircuit(circuit,initial_guess=initialGuess)
-    circuit = circuit.fit(f,Z)
-    ZValues1 = circuit.predict(f)
-    
-    fig, ax = plt.subplots()
-    ax.plot(Z.real,-Z.imag,'ko')
-    ax.plot(ZValues1.real,-ZValues1.imag,'r-')
-    
-    plt.show()
-    
-    return circuit
+        EISData (pd.DataFrame): EIS Data from ReadDataFiles.readPEIS.
+        title (str): title of plot + ' Nyquist Plot'
+        freqRange (list[float]): [lower freq bound, upper freq bound]
+        fitModel (bool, optional): Whether to fit a circuit model. Defaults to False.
+        circuitString (str, optional): Description of circuit model. See impedance.py docs for more details. Defaults to None.
+        initialGuess (list[float], optional): Initial guess of circuit model parameters. Defaults to [].
+        bounds (tuple[list[float]], optional): Bounds of circuit model parameters (lower bounds, upper bounds). Defaults to ([],[]).
 
-def plotOneNyquist(filename,title,freqRange,fitModel=False,circuitString = None,initialGuess=[],bounds=([],[])):
-    
+    Returns:
+        impedance.models.circuits.CustomCircuit: Fitted circuit. None if fitModel = False.
+    """
     fig, ax = plt.subplots()
-    f, Z = readPEISImpedance(filename)
+    f, Z = convertToImpedanceAnalysis(eisData)
     f, Z = cropFrequencies(f,Z,freqRange[0],freqRange[1])
     if fitModel:
         circuit = CustomCircuit(circuitString,initial_guess=initialGuess)
@@ -69,29 +60,40 @@ def plotOneNyquist(filename,title,freqRange,fitModel=False,circuitString = None,
         ax.plot(zPredict.real,-zPredict.imag,color='k',linestyle='-',label=circuitString)
     
     ax.plot(Z.real,-Z.imag,'o',color='k')
-    ax.set(title = title + ' Nyquist Plots',
+    ax.set(title = title + ' Nyquist Plot',
            xlabel = 'Re(Z(f)) ($\Omega$)',
            ylabel = '-Im(Z(f)) ($\Omega$)')
     if fitModel == False:
         circuit = None
-    print(circuit)
+        
     plt.show()
     
     return circuit
 
-def plotCompareNyquist(filenames,title,freqRange,fitModel=False,circuitString=None,initialGuess=[],bounds=([],[]),legendList=None,saveData=False):
-    
-    numberOfPlots = len(filenames)
+def plotManyNyquists(eisDatas: list[pd.DataFrame], title: str, freqRange: list[float], fitModel: bool = False, circuitString: str = None,initialGuess: list[float] = [],bounds: tuple[list[float]] = ([],[]), legendList: list[str] = None):
+    """Takes multiple EIS DataFrames and plots Nyquists + fits.
+
+    Args:
+        eisDatas (list[pd.DataFrame]): List of dataframes from ReadDataFiles.readPEIS.
+        title (str): Title of samples.
+        freqRange (list[float]): [lower freq bound, upper freq bound]
+        fitModel (bool, optional): Whether to fit a circuit model. Defaults to False.
+        circuitString (str, optional): Description of circuit model. See impedance.py docs for more details. Defaults to None.
+        initialGuess (list[float], optional): Initial guess of circuit model parameters. Defaults to [].
+        bounds (tuple[list[float]], optional): Bounds of circuit model parameters (lower bounds, upper bounds). Defaults to ([],[]).
+        legendList (list[str], optional): List of legend objects. Defaults to None.
+
+    Returns:
+        list[impedance.models.circuits.CustomCircuit]: List of fitted circuits. None if fitModel = False.
+    """
+    numberOfPlots = len(eisDatas)
     circuitList = []
     fig, ax = plt.subplots()
-    
-    if saveData:
-        datadf = pd.DataFrame()
     
     for i in range(0,numberOfPlots):
         
         #gets f and Z values
-        f, Z = readPEISImpedance(filenames[i])
+        f, Z = convertToImpedanceAnalysis(eisDatas[i])
         
         #crops frequencies
         f, Z = cropFrequencies(f,Z,freqRange[0],freqRange[1])
@@ -116,16 +118,6 @@ def plotCompareNyquist(filenames,title,freqRange,fitModel=False,circuitString=No
             ax.plot(Z.real,-Z.imag,'o',color=color)
         if fitModel:
             ax.plot(zPredict.real,-zPredict.imag,color=color,linestyle='-',label='_')
-            
-        if saveData:
-            datadf[legendList[i]+' RealData'] = Z.real
-            datadf[legendList[i]+' -ImagData'] = -Z.imag
-            if fitModel:
-                datadf[legendList[i]+' RealCircuitFit'] = zPredict.real
-                datadf[legendList[i]+' -ImagCircuitFit'] = -zPredict.imag 
-        
-    
-    maxBounds = max([ax.get_ylim()[1],ax.get_xlim()[1]])
     
     ax.set(title = title + ' Nyquist Plots',
            xlabel = 'Re(Z(f)) ($\Omega$)',
@@ -138,13 +130,18 @@ def plotCompareNyquist(filenames,title,freqRange,fitModel=False,circuitString=No
     
     plt.show()
     
-    if saveData:
-        return datadf
-    else:
-        return circuitList
+    return circuitList
 
-def plotCircuitProperties(circuitList,legendList,saveData=False):
-    
+def plotCircuitProperties(circuitList: list[CustomCircuit], legendList: list[str]):
+    """Takes circuits from plotOneNyquist and plotManyNyquists and plots them in the order of the list. Requires same circuitstring.
+
+    Args:
+        circuitList (list[CustomCircuit]): List of fitted circuits.
+        legendList (list[str]): List of labels for circuits (x-axis labels)
+
+    Returns:
+        pd.DataFrame: circuit properties and errors 
+    """
     numberOfCircuits = len(circuitList)
     
     names = circuitList[0].get_param_names()[0]
@@ -155,28 +152,23 @@ def plotCircuitProperties(circuitList,legendList,saveData=False):
     parameterMatrix = np.zeros((numberOfParameters,numberOfCircuits))
     confMatrix = np.zeros((numberOfParameters,numberOfCircuits))
     
-    datadf = None
-    
-    if saveData:
-        datadf = pd.DataFrame()
+    datadf = pd.DataFrame()
     
     for i in range(0,numberOfParameters):
         for j in range(0,numberOfCircuits):
             parameterMatrix[i,j] = circuitList[j].parameters_[i]
             confMatrix[i,j] = circuitList[j].conf_[i]
             
-    if saveData:
+    elementStringList = []
+    for i, name in enumerate(names):
+        elementStringList.append(name + ' ' + units[i])
+    
+    datadf['Circuit Element'] = elementStringList
+    
+    for i in range(0,numberOfCircuits):
         
-        elementStringList = []
-        for i, name in enumerate(names):
-            elementStringList.append(name + ' ' + units[i])
-        
-        datadf['Circuit Element'] = elementStringList
-        
-        for i in range(0,numberOfCircuits):
-            
-            datadf[legendList[i]+' Value'] = circuitList[i].parameters_
-            datadf[legendList[i]+' Err'] = circuitList[i].conf_
+        datadf[legendList[i]+' Value'] = circuitList[i].parameters_
+        datadf[legendList[i]+' Err'] = circuitList[i].conf_
                 
     for i, parameter in enumerate(names):
         
@@ -196,45 +188,35 @@ def plotCircuitProperties(circuitList,legendList,saveData=False):
     
     return datadf
 
-def convertToPyDRTTools(filename:str,freqRange: list[float]):
-    
-    data = readPEIS(filename)
-    data['Im(Z)/Ohm'] = -data['-Im(Z)/Ohm']   
-    data = data[(data['freq/Hz'] >= freqRange[0]) & (data['freq/Hz'] <= freqRange[1])] 
-    data.to_csv(filename[:-4]+'.csv',
-                sep=',',
-                index=False,
-                header=False,
-                columns=['freq/Hz','Re(Z)/Ohm','Im(Z)/Ohm'])
+def plotOneDRT():
     
     return
 
-def processFolder(foldername: str, freqRange):
-    #written by chatGPT
-    peis_files = []
+def plotManyDRTs(eisDatas: list[pd.DataFrame], title: str, freqRange: list[float], legendList: list[str] = None, rbf_type='Gaussian',der_used='1st order',cv_type='GCV',reg_param=1E-4,shape_control='FWHM Coefficient',coeff=0.1):
+    """_summary_
 
-    # Walk through the folder and its subdirectories
-    for root, dirs, files in os.walk(foldername):
-        for file in files:
-            # Check if the file name contains 'PEIS' and ends with '.txt'
-            if 'PEIS' in file and file.endswith('.txt'):
-                filepath = os.path.join(root, file)
-                peis_files.append(filepath)
+    Args:
+        eisDatas (list[pd.DataFrame]): EIS data in pandas dataframe.
+        title (str): Title of plot.
+        freqRange (list[float]): [lower freq bound, upper freq bound]
+        legendList (list[str], optional): List of legend items. Defaults to None.
+        rbf_type (str, optional): See bayesdrt2 docs. Defaults to 'Gaussian'.
+        der_used (str, optional): See bayesdrt2 docs. Defaults to '1st order'.
+        cv_type (str, optional): See bayesdrt2 docs. Defaults to 'GCV'.
+        reg_param (_type_, optional): See bayesdrt2 docs. Defaults to 1E-4.
+        shape_control (str, optional): See bayesdrt2 docs. Defaults to 'FWHM Coefficient'.
+        coeff (float, optional): See bayesdrt2 docs. Defaults to 0.1.
 
-    for file in peis_files:
-        convertToPyDRTTools(file,freqRange)
-    
-    return
-
-def plotCompareDRT(filenames,title,freqRange,legendList=None,rbf_type='Gaussian',der_used='1st order',cv_type='GCV',reg_param=1E-4,shape_control='FWHM Coefficient',coeff=0.1):
-    
-    numberOfPlots = len(filenames)
+    Returns:
+        tuple(matplotlib.figure.Figure,matplotlib.axes._axes.Axes): fig and ax for further customization if necessary
+    """
+    numberOfPlots = len(eisDatas)
     fig, ax = plt.subplots()
     ax.set_title(title)
     
     for i in range(0,numberOfPlots):
         
-        data = readPEIS(filenames[i])
+        data = eisDatas[i]
         data['Im(Z)/Ohm'] = -data['-Im(Z)/Ohm']   
         data = data[(data['freq/Hz'] >= freqRange[0]) & (data['freq/Hz'] <= freqRange[1])] 
         
@@ -251,7 +233,6 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None,rbf_type='Gaussian'
                         shape_control=shape_control,
                         coeff=coeff) #0.3 is good
         color = colorFader('blue','red',i,numberOfPlots)
-        freq = 1 / data.out_tau_vec
         ax.plot(data.out_tau_vec, data.gamma,color=color)
     
     ax.set(ylabel = r'$\gamma$ ($\Omega$)',
@@ -262,10 +243,21 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None,rbf_type='Gaussian'
         
     plt.show()
     
-    return
+    return (fig, ax)
 
 def predictCurrent(peisFilename,voltageWaveformFilename,pH,area,referencePotential):
-    
+    """Experimental function to use EIS impedance to predict current waveform from voltage waveform.
+
+    Args:
+        peisFilename (_type_): _description_
+        voltageWaveformFilename (_type_): _description_
+        pH (_type_): _description_
+        area (_type_): _description_
+        referencePotential (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     #sets DC offset so 0 current is HER equilibrium
     DCOffset = referencePotential + 0.059*pH
     
@@ -395,3 +387,28 @@ def getEISFromDynamicCA(filename, pH, area, referencePotential, irange, fundamen
     #saves pandas dataframe
         
     return output
+
+def generateCircuitFit(f,Z):
+    """Takes in data from convertToImpedanceAnalysis and fits it to a specific circuit.
+
+    Args:
+        f (np.ndarray[float]): frequencies
+        Z (np.ndarray[complex]): impedances
+        
+    Returns:
+        circuit (CustomCircuit): can use this to plot
+    """
+    #generates circuit model
+    circuit = 'p(p(R1,C1),p(R2,CPE2))-R0'
+    initialGuess = [400,50e-6,0,0,1,6]
+    circuit = CustomCircuit(circuit,initial_guess=initialGuess)
+    circuit = circuit.fit(f,Z)
+    ZValues1 = circuit.predict(f)
+    
+    fig, ax = plt.subplots()
+    ax.plot(Z.real,-Z.imag,'ko')
+    ax.plot(ZValues1.real,-ZValues1.imag,'r-')
+    
+    plt.show()
+    
+    return circuit

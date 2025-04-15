@@ -4,7 +4,6 @@ import matplotlib as mpl
 import scipy as sc
 import re
 
-
 def readCV(filename: str, pH: float, area: float, referencePotential: float): #area is in cm^2
     """Reads cyclic voltammetry data from Biologic into Pandas dataframe.
 
