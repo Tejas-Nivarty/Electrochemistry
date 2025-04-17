@@ -3,12 +3,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from impedance.models.circuits import CustomCircuit
-from impedance.preprocessing import cropFrequencies, ignoreBelowX
+from impedance.preprocessing import cropFrequencies
 import os
 from pyDRTtools.runs import EIS_object, simple_run
 from scipy import fft
 import scipy as sc
-from OSC import plotWaveforms
 
 def plotOneBode(data: pd.DataFrame, title: str):
     """Plots a Bode plot from EIS data.

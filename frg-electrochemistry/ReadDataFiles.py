@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib as mpl
 import scipy as sc
 import re
+import os
 
 def readCV(filename: str, pH: float, area: float, referencePotential: float): #area is in cm^2
     """Reads cyclic voltammetry data from Biologic into Pandas dataframe.
@@ -90,6 +91,68 @@ def readCV(filename: str, pH: float, area: float, referencePotential: float): #a
     data = data[~((data['time/s'] == 0) & (data['I/mA'] == 0))]
     
     return data
+
+def buildCVList(filenameList: list[str], pH: float, area: float, referencePotential: float): 
+    """Takes list of filenames with same pH, area, and referencePotential and builds CV list.
+
+    Args:
+        filenameList (list[str]): List of filenames to read CVs from.
+        pH (float): pH of electrolyte for RHE conversion
+        area (float): geometric area of electrode in cm^2 for current density
+        referencePotential (float): potential of reference electrode vs. SHE in V
+
+    Returns:
+        list[pd.DataFrame]: List of DataFrames containing CV data.
+    """
+    dataList = []
+    
+    for filename in filenameList:
+        data = readCV(filename,pH,area,referencePotential)
+        dataList.append(data)
+    
+    return dataList
+
+def buildEDLCList(folderName: str, number: int, pH: float, area: float, referencePotential: float, excludeLastX: int = 0):
+    """Wrapper around buildCVList for faster EDLC analysis.
+
+    Args:
+        folderName (str): Folder that EDLC CVs are located in.
+        number (int): Number that EDLC CVs all start with in common.
+        pH (float): pH that EDLC was taken at.
+        area (float): Area of electrode for EDLC in cm^2.
+        referencePotential (float): Potential of reference electrode
+        excludeLastX (int, optional): _description_. Defaults to 0.
+
+    Returns:
+        _type_: _description_
+    """
+    twoDigit = False
+    number = str(number)
+    if len(number) == 2:
+        twoDigit = True
+    
+    if not os.path.isdir(folderName):
+        return None
+
+    files = os.listdir(folderName)
+    edlcFiles = []
+    for file in files:
+        isEDLC = False
+        if twoDigit and (file[:2] == number):
+            isEDLC = True
+        elif (not twoDigit) and (file[0] == number):
+            isEDLC = True
+        if (file[-3:] != 'txt') and (file[-3:] != 'mpt'):
+            isEDLC = False
+        if 'CA' in file:
+            isEDLC = False
+        if isEDLC:
+            edlcFiles.append(folderName + '\\' + file)
+    
+    if excludeLastX != 0:        
+        edlcFiles = edlcFiles[excludeLastX:]
+
+    return buildCVList(edlcFiles,pH,area,referencePotential)
 
 def readCA(filename: str, pH: float, area: float, referencePotential: float, shouldRemoveNoise: bool = False): #area is in cm^2
     """Reads chronoamperometry data from Biologic into pandas dataframe.
@@ -202,11 +265,12 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float, sho
     
     return data
 
-def readPEIS(filename: str):
+def readPEIS(filename: str, freqRange: list[float] = None):
     """Reads potentiostatic electrochemical impedance spectroscopy data from Biologic into pandas dataframe.
 
     Args:
         filename (str): filename of PEIS .txt (must be exported using PEIS-all) or PEIS .mpt
+        freqRange (list[float]): Frequency range to use for data, [low limit, high limit]. Defaults to None.
 
     Returns:
         pd.DataFrame: dataframe of PEIS data
@@ -319,21 +383,44 @@ def readPEIS(filename: str):
     #cleans data to remove points where Synology interferes with saving data
     data = data[~((data['time/s'] == 0) & (data['<I>/mA'] == 0))]
     
+    #applies frequency range
+    if freqRange != None:
+        data = data[(data['freq/Hz'] >= freqRange[0]) & (data['freq/Hz'] <= freqRange[1])]
+        
     return data
 
-def readPEISImpedance(filename: str):
-    """Reads PEIS directly into format that impedance.py can use.
+def buildPEISList(filenameList: list[str], freqRange: list[float] = None):
+    """Takes list of filenames and builds EIS list.
+
+    Args:
+        filenameList (list[str]): List of filenames to read EISs from.
+        freqRange (list[float]): Frequency range to use for data, [low limit, high limit]. Defaults to None.
+
+    Returns:
+        list[pd.DataFrame]: List of DataFrames containing CV data.
+    """
+    dataList = []
+    
+    for filename in filenameList:
+        data = readPEIS(filename, freqRange)
+        dataList.append(data)
+    
+    return dataList
+
+def readPEISImpedance(filename: str, freqRange: list[float] = None):
+    """Reads PEIS directly into format that impedance.py or bayesdrt2 can use.
 
     Args:
         filename (str): filename of PEIS .txt (must be exported using PEIS-all) or PEIS .mpt
+        freqRange (list[float]): [lowerFreq,upperFreq] defines frequency range to read file over. Defaults to None.
 
     Returns:
         tuple(np.ndarray(float),np.ndarray(complex)): (frequency, complex impedance)
     """
-    return convertToImpedanceAnalysis(readPEIS(filename))
+    return convertToImpedanceAnalysis(readPEIS(filename, freqRange))
 
 def convertToImpedanceAnalysis(data: pd.DataFrame):
-    """Converts to format that impedance.py can use.
+    """Converts dataframe to format that impedance.py or bayesdrt2 can use.
 
     Args:
         data (pd.DataFrame): Output of ReadDataFiles.readPEIS.
@@ -341,6 +428,7 @@ def convertToImpedanceAnalysis(data: pd.DataFrame):
     Returns:
         tuple(np.ndarray(float),np.ndarray(complex)): (frequency, complex impedance)
     """
+    
     frequency = data['freq/Hz'].to_numpy()
     dataLength = len(frequency)
     realImpedance = data['Re(Z)/Ohm'].to_numpy()
@@ -577,23 +665,6 @@ def calculateIntegral(timeSeries: pd.Series, valueSeries: pd.Series, baseline: f
     
     #integrates
     return sc.integrate.trapezoid(y=valueSeries,x=timeSeries)
-
-def readBayesDRT2(filename: str, freqRange: list[float]):
-    """Reads .txt or .mpt file for PEIS from Biologic into freq, Z for bayesDRT2 library
-
-    Args:
-        filename (str): filename of PEIS .txt (must be exported using PEIS-all) or PEIS .mpt
-        freqRange (list[float]): [lowerFreq,upperFreq] defines frequency range to read file over
-
-    Returns:
-        tuple(np.ndarray(float),np.ndarray(complex)): (frequency, complex impedance)
-    """
-    data = readPEIS(filename)
-    data = data[(data['freq/Hz'] >= freqRange[0]) & (data['freq/Hz'] <= freqRange[1])]
-    freq = data['freq/Hz'].values
-    Z = data['Re(Z)/Ohm'].values - 1j * data['-Im(Z)/Ohm'].values
-    
-    return freq, Z
 
 def readExcelSheet(filename: str):
     """Gets H2 produced from Excel sheet. Ensure that the Excel sheet contains the correct analysis

@@ -3,10 +3,18 @@ pd.options.mode.chained_assignment = None
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import linregress
-import os
-from ReadDataFiles import readCV, colorFader
+from ReadDataFiles import colorFader
 
-def plotOneCV(data,title):
+def plotOneCV(data: pd.DataFrame, title: str):
+    """Plots every cycle of one CV scan.
+
+    Args:
+        data (pd.DataFrame): DataFrame from readCV.
+        title (str): Title of plot.
+
+    Returns:
+        tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
+    """
     numCycles = int(data['cycle number'].max())
     fig, ax = plt.subplots()
     ax.axhline(0,color='k')
@@ -20,9 +28,25 @@ def plotOneCV(data,title):
            ylabel = r'j $(\frac{mA}{cm^2_{geo}})$')
     ax.legend()
     plt.show()
-    return
+    return (fig, ax)
     
-def plotCompareCV(dataList,legendList,title,cycleList=None,horizontalLine=False,verticalLine=False,xlim=None,ylim=None,currentdensity=True):
+def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] = None, cycleList: list[int] = None, horizontalLine: bool = False, verticalLine: bool = False, xlim: list[float] = None, ylim: list[float] = None, currentdensity: bool = True):
+    """Plots one cycle (default last) of many CVs.
+
+    Args:
+        dataList (list[pd.DataFrame]): List of CV DataFrames.
+        title (str): Title of plot.
+        legendList (list[str], optional): List of legend items. Defaults to None.
+        cycleList (list[int], optional): List of specific cycles to plot. Defaults to None.
+        horizontalLine (bool, optional): Plots line through current = 0. Defaults to False.
+        verticalLine (bool, optional): Plots line through V_RHE = 0. Defaults to False.
+        xlim (list[float], optional): limits of x-axis. Defaults to None.
+        ylim (list[float], optional): limits of y-axis. Defaults to None.
+        currentdensity (bool, optional): If false, uses raw current. Defaults to True.
+
+    Returns:
+        tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
+    """
     numFiles = len(dataList)
     fig, ax = plt.subplots()
     if horizontalLine:
@@ -67,17 +91,18 @@ def plotCompareCV(dataList,legendList,title,cycleList=None,horizontalLine=False,
         ax.set(xlim=xlim)
 
     plt.show()
-    return
+    return (fig, ax)
 
-def plotECSA(dataList,title,trasatti=False):
+def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False):
     """Takes list of DataFrames from buildEDLCList and finds ECSA.
 
     Args:
         dataList (list[pd.Dataframe]): CV DataFrames
         title (str): title of graph + EDLC
+        trasatti (bool): set to False, implements Trasatti's method, unfinished
 
     Returns:
-        (tuple(LinregressResult,list[float],list[float])): (result,scanRateList,currentList)
+        tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
     """
     numFiles = len(dataList)
     currentList = []
@@ -122,7 +147,7 @@ def plotECSA(dataList,title,trasatti=False):
         
         #plots ECSA CVs
         legendList = ['{:3.0f} '.format(i*1000)+r'$\frac{mV}{s}$' for i in scanRateList]
-        plotCompareCV(dataList,legendList,title+' EDLC CVs',horizontalLine=True,currentdensity=False)
+        plotManyCVs(dataList,legendList,title+' EDLC CVs',horizontalLine=True,currentdensity=False)
         
         #performs linear regression and plots
         result = linregress(scanRateList,currentList)
@@ -150,51 +175,11 @@ def plotECSA(dataList,title,trasatti=False):
             
         #plots ECSA CVs
         legendList = ['{:3.0f} '.format(i*1000)+r'$\frac{mV}{s}$' for i in scanRateList]
-        plotCompareCV(dataList,legendList,title+' EDLC CVs',horizontalLine=True)
+        plotManyCVs(dataList,legendList,title+' EDLC CVs',horizontalLine=True)
             
         #performs linear regression
         result = linregress(xList,yList)
         k1 = result.slope
         k2 = result.intercept
     
-    return
-
-def buildDataList(filenameList,pH,area,referencePotential): 
-    
-    dataList = []
-    
-    for filename in filenameList:
-        data = readCV(filename,pH,area,referencePotential)
-        dataList.append(data)
-    
-    return dataList
-
-def buildEDLCList(folderName,number,pH,area,referencePotential,excludeLastX=0):
-    
-    twoDigit = False
-    number = str(number)
-    if len(number) == 2:
-        twoDigit = True
-    
-    if not os.path.isdir(folderName):
-        return None
-
-    files = os.listdir(folderName)
-    edlcFiles = []
-    for file in files:
-        isEDLC = False
-        if twoDigit and (file[:2] == number):
-            isEDLC = True
-        elif (not twoDigit) and (file[0] == number):
-            isEDLC = True
-        if (file[-3:] != 'txt') and (file[-3:] != 'mpt'):
-            isEDLC = False
-        if 'CA' in file:
-            isEDLC = False
-        if isEDLC:
-            edlcFiles.append(folderName + '\\' + file)
-    
-    if excludeLastX != 0:        
-        edlcFiles = edlcFiles[excludeLastX:]
-
-    return buildDataList(edlcFiles,pH,area,referencePotential)
+    return (fig, ax)

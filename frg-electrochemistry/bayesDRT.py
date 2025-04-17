@@ -1,49 +1,22 @@
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-from ReadDataFiles import readBayesDRT2, colorFader, readPEIS
+from ReadDataFiles import colorFader, readPEIS, convertToImpedanceAnalysis
+from PEIS import plotManyNyquists
 import pandas as pd
 
 from bayes_drt2.inversion import Inverter
 
-def plotCompareNyquist(filenames,title,freqRange,legendList=None):
-    
-    numberOfPlots = len(filenames)
-    circuitList = []
-    fig, ax = plt.subplots()
-    
-    for i in range(0,numberOfPlots):
-        
-        #gets f and Z values
-        f, Z = readBayesDRT2(filenames[i],freqRange)
-        
-        #plots results
-        color = colorFader('blue','red',i,numberOfPlots)
-        if legendList != None:
-            ax.plot(Z.real,-Z.imag,'o',color=color,label=legendList[i])
-        else:
-            ax.plot(Z.real,-Z.imag,'o',color=color)
-        
-    
-    maxBounds = max([ax.get_ylim()[1],ax.get_xlim()[1]])
-    
-    ax.set(title = title + ' Nyquist Plots',
-           xlabel = 'Re(Z(f)) ($\Omega$)',
-           ylabel = '-Im(Z(f)) ($\Omega$)')
-    
-    plt.axis('square')
-    
-    if legendList != None:
-        ax.legend()
-    
-    plt.show()
-    
-    return circuitList
+def getDRT(eisData: pd.DataFrame):
+    """Gets single DRT of both HMC and MAP methods. From bayesDRT2 default functions.
 
-def getDRT(filename,title=None,freqRange=None,legendList=None):
-    
-    freq, Z = readBayesDRT2(filename,freqRange)
-    
+    Args:
+        eisData (pd.DataFrame): DataFrame of EIS data.
+        
+    Returns:
+        tuple(matplotlib.figure.Figure,matplotlib.axes._axes.Axes): fig and ax for further customization if necessary
+    """
+    freq, Z = convertToImpedanceAnalysis(eisData)
     
     "Fit the data"
     # By default, the Inverter class is configured to fit the DRT (rather than the DDT)
@@ -105,31 +78,47 @@ def getDRT(filename,title=None,freqRange=None,legendList=None):
 
     # fig.tight_layout()
         
-    return
+    return (fig, axes)
 
-def plotCompareDRT(filenames,title,freqRange,legendList=None,saveData=False):
+def plotCompareDRT(eisDatas: list[pd.DataFrame], title: str, legendList: list[str] = None):
+    """Plots many DRTs.
+
+    Args:
+        eisDatas (list[pd.DataFrame]): List of EIS DataFrames.
+        title (str): Title of DRT plot.
+        legendList (list[str], optional): _description_. Defaults to None.
+
+    Returns:
+        tuple(matplotlib.figure.Figure,matplotlib.axes._axes.Axes): fig and ax for further customization if necessary
+    """
+    plotManyNyquists(eisDatas,title,freqRange,legendList=legendList)
     
-    plotCompareNyquist(filenames,title,freqRange,legendList=legendList)
+    #automatically finds minimum and maximum of freqRange
+    minFreq = np.inf
+    maxFreq = -np.inf
+    for eisData in eisDatas:
+        currMinFreq = eisData['freq/Hz'].min()
+        currMaxFreq = eisData['freq/Hz'].max()
+        if currMinFreq < minFreq:
+            minFreq = currMinFreq
+        if currMaxFreq > maxFreq:
+            maxFreq = currMaxFreq
+    freqRange = [minFreq,maxFreq]
     
     freqRange = np.nan_to_num(freqRange,neginf=0.1,posinf=7e6)
     logFreqRange = -np.log10(freqRange)
     confInt = 95
     
-    numberOfPlots = len(filenames)
+    numberOfPlots = len(eisDatas)
     fig, ax = plt.subplots()
     ax.set_title(title)
     timeConstantArray = np.logspace(logFreqRange[0],logFreqRange[1], 1000)
-    finaldf = None
-    
-    if saveData:
-        
-        finaldf = pd.DataFrame()
     
     for i in range(0,numberOfPlots):
         
         color = colorFader('blue','red',i,numberOfPlots)
         
-        freq, Z = readBayesDRT2(filenames[i],freqRange)
+        freq, Z = convertToImpedanceAnalysis(eisDatas[i])
         inv_hmc = Inverter(basis_freq=freq)
         inv_hmc.fit(freq, Z, mode='sample',nonneg=True,outliers=True)
         
@@ -145,13 +134,6 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None,saveData=False):
             
         ax.fill_between(timeConstantArray,gammaLo,gammaHi,color=color,alpha=0.2,label='_')
         
-        if saveData:
-            
-            finaldf[legendList[i]+' TimeConstant(s)'] = timeConstantArray
-            finaldf[legendList[i]+' gammaLo(Ohm)'] = gammaLo
-            finaldf[legendList[i]+' gammaHi(Ohm)'] = gammaHi
-            finaldf[legendList[i]+' gammaMean(Ohm)'] = gammaMean
-        
         continue
     
     if legendList != None:
@@ -161,4 +143,4 @@ def plotCompareDRT(filenames,title,freqRange,legendList=None,saveData=False):
             xscale='log')
     plt.show()
     
-    return finaldf
+    return (fig, ax)
