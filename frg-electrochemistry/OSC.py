@@ -19,7 +19,16 @@ import holoviews as hv
 from holoviews.operation.datashader import datashade, shade
 
 def fft(data: pd.DataFrame,dataLabel: str,timeLabel: str):
-    
+    """Finds the magnitudes from a fast Fourier transform of a dataframe with x and y values.
+
+    Args:
+        data (pd.DataFrame): DataFrame with all data.
+        dataLabel (str): Label for DataFrame y-values (current, voltage, etc.)
+        timeLabel (str): Label for DataFrame x-values (typically time)
+
+    Returns:
+        tuple[np.ndarray,np.ndarray]: (frequency, magnitude)
+    """
     dt = data[timeLabel].diff().mean()
     
     data[dataLabel] = abs(data[dataLabel] - data[dataLabel].mean())
@@ -38,8 +47,14 @@ def fft(data: pd.DataFrame,dataLabel: str,timeLabel: str):
     
     return (frequencies,magnitude)
 
-def plotFFT(datasets: list[tuple],legend,title):
-    
+def plotFFTs(datasets: list[tuple], legend: list[str], title: str):
+    """Takes FFT from OSC.fft and plots many of them.
+
+    Args:
+        datasets (list[tuple[np.ndarray,np.ndarray]]): List of OSC.fft outputs.
+        legend (list[str]): Legend text for each dataset in datasets.
+        title (str)): Title of plot.
+    """
     fig, ax = plt.subplots()
     maxMagnitude = 0
     
@@ -69,8 +84,16 @@ def plotFFT(datasets: list[tuple],legend,title):
     
     return
 
-def analyzeWaveform(pulse: pd.DataFrame, experimentLength: float, frequency: float, title: str = None,plot=True):
-    
+def analyzeWaveform(pulse: pd.DataFrame, experimentLength: float, frequency: float, title: str = None, plot: bool = True):
+    """Integrates oscilloscope waveform to find total charge transferred. Doesn't work well.
+
+    Args:
+        pulse (pd.DataFrame): Oscilloscope waveform from ReadDataFiles.readOSC()
+        experimentLength (float): Length of experiment that waveform was collected over in seconds.
+        frequency (float): Frequency of waveform in Hz.
+        title (str, optional): Title of sample to be included in plots. Defaults to None.
+        plot (bool, optional): Whether to plot waveform. Defaults to True.
+    """
     numberOfWaveforms = pulse['Time (s)'].max()*frequency
     period = 1/frequency
     
@@ -224,7 +247,7 @@ def analyzeWaveform(pulse: pd.DataFrame, experimentLength: float, frequency: flo
 
 def plotWaveform(pulse: pd.DataFrame, title: str, jv: bool, reference=pd.DataFrame()):
     """
-    Plot waveform data using Bokeh with improved formatting
+    Plot waveform data using Bokeh with improved formatting. From Claude.
     
     Parameters:
     -----------
@@ -487,7 +510,7 @@ def plotWaveform(pulse: pd.DataFrame, title: str, jv: bool, reference=pd.DataFra
 
 def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv: bool, reference=pd.DataFrame(), customColors=None):
     """
-    Plot multiple waveforms using Bokeh and Datashader for performance
+    Plot multiple waveforms using Bokeh and Datashader for performance. From Claude.
     
     Parameters:
     -----------
@@ -708,9 +731,14 @@ def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv:
     return p1
 
 def getEISFromWaveform(pulse: pd.DataFrame):
-    
+    """Experimental, unfinished function to get EIS from waveform by taking fft and doing Z = V/I
+
+    Args:
+        pulse (pd.DataFrame): _description_
+    """
     return
 
+#if you would like to use CLI to analyze a waveform can do it
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()

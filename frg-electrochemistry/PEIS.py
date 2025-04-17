@@ -258,7 +258,7 @@ def generateCircuitFit(f: np.ndarray[float], Z: np.ndarray[complex], circuitStri
         circuit (CustomCircuit): can use this to plot
     """
     #generates circuit model
-    initialGuess = [400,50e-6,0,0,1,6]
+    
     circuit = CustomCircuit(circuitString,initial_guess=initialGuess)
     circuit = circuit.fit(f,Z)
     ZValues1 = circuit.predict(f)
