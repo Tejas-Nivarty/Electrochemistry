@@ -4,11 +4,11 @@ import scipy as sc
 import matplotlib.pyplot as plt
 plt.rcParams['font.size'] = 12
 import matplotlib as mpl
-from ReadDataFiles import readOSC, readRawWaveform, colorFader, calculateIntegral
+from ReadDataFiles import readOSC, colorFader, calculateIntegral
 import argparse
-from bokeh.plotting import figure, show, output_file
+from bokeh.plotting import figure, show
 from bokeh.layouts import column, row
-from bokeh.models import ColorBar, LinearColorMapper, BasicTicker, ColumnDataSource, Range1d, HoverTool, Label, LinearAxis
+from bokeh.models import Range1d, LinearAxis
 from bokeh.io import output_notebook, reset_output
 from bokeh.palettes import Viridis256, Spectral11
 import datashader as ds
@@ -141,109 +141,131 @@ def analyzeWaveform(pulse: pd.DataFrame, experimentLength: float, frequency: flo
 
     return
 
-# def plotWaveform(pulse: pd.DataFrame, title: str, jv: bool, reference = pd.DataFrame()):
-    
-#     fig, ax = plt.subplots()
-#     ax2 = ax.twinx()
-    
-#     #ax.plot(pulse['Time (s)']*1000,pulse['Current Density (mA/cm^2)'],color='r')
-#     ax.plot(pulse['Time (s)']*1000,pulse['Current (A)'],color='r')
-#     ax2.plot(pulse['Time (s)']*1000,pulse['Voltage (V)'],color='k')
-#     if not reference.empty:
-#         ax2.plot(reference['Time (s)']*1000,reference['Voltage (V)'],color='k',linestyle='--')
-#     ax.set(title= title,
-#            #ylabel=r'Current Density $(\frac{mA}{cm^2_{geo}})$',
-#            ylabel=r'Current (A)',
-#            xlabel='Time (ms)')
-#     ax2.set(ylabel = r'Voltage (V$_{RHE}$)')
-#     ax.axhline(0,color='k',zorder=0)
-#     plt.show()
-    
-#     if jv == True:
-#         fig, ax = plt.subplots()
-#         plt.axhline(0,color='k',zorder=0)
-#         plt.axvline(0,color='k',zorder=0)
-#         plt.axvline(-1.965,color='k',linestyle='--',zorder=0)
-#         plt.axvline(6.535,color='k',linestyle='--',zorder=0)
-#         plt.axvline(-0.335,color='k',linestyle='--',zorder=0)
-#         #plt.scatter(pulse['Voltage (V)'],pulse['Charge Density (mC/cm^2)'],c=(pulse['Time (s)']-pulse['Time (s)'].iloc[0])*1e6,cmap='gist_rainbow')
-#         plt.scatter(pulse['Voltage (V)'],pulse['Current Density (mA/cm^2)'],c=(pulse['Time (s)']-pulse['Time (s)'].iloc[0])*1e6,cmap='gist_rainbow')
-#         plt.colorbar(label=r'Time ($\mu$s)')
-#         plt.title(title)
-#         plt.xlabel(r'Voltage (V$_{RHE}$)')
-#         #plt.ylabel(r'Charge Density $(\frac{mC}{cm^2_{geo}})$')
-#         plt.ylabel(r'Current Density $(\frac{mA}{cm^2_{geo}})$')
-#         plt.show()
-    
-#     return
+def plotWaveformMPL(pulse: pd.DataFrame, title: str, jv: bool, reference: pd.DataFrame = pd.DataFrame()):
+    """Uses matplotlib to plot waveform. Slow for low frequency, large waveforms.
 
-# def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv: bool, reference = pd.DataFrame(), customColors = None):
+    Args:
+        pulse (pd.DataFrame): Waveform from readOSC.
+        title (str): Title of plot.
+        jv (bool): If true, plots jv curve.
+        reference (pd.DataFrame, optional): Reference from readRawWaveform. Defaults to empty pd.DataFrame().
+
+    Returns:
+        tuple(matplotlib.figure.Figure,matplotlib.axes._axes.Axes): fig and ax for further customization if necessary
+    """
+    fig, ax = plt.subplots()
+    ax2 = ax.twinx()
     
-#     fig, ax = plt.subplots()
-#     ax2 = ax.twinx()
+    #ax.plot(pulse['Time (s)']*1000,pulse['Current Density (mA/cm^2)'],color='r')
+    ax.plot(pulse['Time (s)']*1000,pulse['Current (A)'],color='r')
+    ax2.plot(pulse['Time (s)']*1000,pulse['Voltage (V)'],color='k')
+    if not reference.empty:
+        ax2.plot(reference['Time (s)']*1000,reference['Voltage (V)'],color='k',linestyle='--')
+    ax.set(title= title,
+           #ylabel=r'Current Density $(\frac{mA}{cm^2_{geo}})$',
+           ylabel=r'Current (A)',
+           xlabel='Time (ms)')
+    ax2.set(ylabel = r'Voltage (V$_{RHE}$)')
+    ax.axhline(0,color='k',zorder=0)
+    plt.show()
+    
+    if jv == True:
+        fig, ax = plt.subplots()
+        plt.axhline(0,color='k',zorder=0)
+        plt.axvline(0,color='k',zorder=0)
+        plt.axvline(-1.965,color='k',linestyle='--',zorder=0)
+        plt.axvline(6.535,color='k',linestyle='--',zorder=0)
+        plt.axvline(-0.335,color='k',linestyle='--',zorder=0)
+        #plt.scatter(pulse['Voltage (V)'],pulse['Charge Density (mC/cm^2)'],c=(pulse['Time (s)']-pulse['Time (s)'].iloc[0])*1e6,cmap='gist_rainbow')
+        plt.scatter(pulse['Voltage (V)'],pulse['Current Density (mA/cm^2)'],c=(pulse['Time (s)']-pulse['Time (s)'].iloc[0])*1e6,cmap='gist_rainbow')
+        plt.colorbar(label=r'Time ($\mu$s)')
+        plt.title(title)
+        plt.xlabel(r'Voltage (V$_{RHE}$)')
+        #plt.ylabel(r'Charge Density $(\frac{mC}{cm^2_{geo}})$')
+        plt.ylabel(r'Current Density $(\frac{mA}{cm^2_{geo}})$')
+        plt.show()
+    
+    return (fig, ax)
+
+def plotWaveformsMPL(pulses: list[pd.DataFrame], title: str, legend: list[str], jv: bool, reference: pd.DataFrame = pd.DataFrame(), customColors: list = None):
+    """Plots multiple waveforms using matplotlib.
+
+    Args:
+        pulses (list[pd.DataFrame]): List of waveforms from readOSC.
+        title (str): Title of plots.
+        legend (list[str]): Legends of pulses.
+        jv (bool): If true, plots jv curves.
+        reference (pd.DataFrame, optional): Reference waveform from readRawWaveform. Defaults to pd.DataFrame().
+        customColors (list, optional): List of custom colors. Defaults to None.
+
+    Returns:
+        tuple(matplotlib.figure.Figure,matplotlib.axes._axes.Axes): fig and ax for further customization if necessary
+    """
+    fig, ax = plt.subplots()
+    ax2 = ax.twinx()
     
     
     
-#     for i, pulse in enumerate(pulses):
-#         if customColors == None:
-#             color = colorFader('blue','red',i,len(pulses))
-#         else:
-#             color = customColors[i]
-#         ax.plot(pulse['Time (s)']*1000,pulse['Current Density (mA/cm^2)'],color=color)
-#         ax2.plot(pulse['Time (s)']*1000,pulse['Voltage (V)'],color=color,linestyle=':')
+    for i, pulse in enumerate(pulses):
+        if customColors == None:
+            color = colorFader('blue','red',i,len(pulses))
+        else:
+            color = customColors[i]
+        ax.plot(pulse['Time (s)']*1000,pulse['Current Density (mA/cm^2)'],color=color)
+        ax2.plot(pulse['Time (s)']*1000,pulse['Voltage (V)'],color=color,linestyle=':')
         
-#     if not reference.empty:
-#         ax2.plot(reference['Time (s)']*1000,reference['Voltage (V)'],color='k',linestyle='--')
+    if not reference.empty:
+        ax2.plot(reference['Time (s)']*1000,reference['Voltage (V)'],color='k',linestyle='--')
     
-#     ax.set(title= title,
-#         ylabel=r'Current Density $(\frac{mA}{cm^2_{geo}})$',
-#         xlabel='Time (ms)')
-#     ax.legend(legend)
-#     ax2.set(ylabel = r'Voltage (V$_{RHE}$)')
-#     ax.axhline(0,color='k',zorder=0)
-#     plt.show()
+    ax.set(title= title,
+        ylabel=r'Current Density $(\frac{mA}{cm^2_{geo}})$',
+        xlabel='Time (ms)')
+    ax.legend(legend)
+    ax2.set(ylabel = r'Voltage (V$_{RHE}$)')
+    ax.axhline(0,color='k',zorder=0)
+    plt.show()
     
-#     if jv == True:
-#         fig, ax = plt.subplots()
+    if jv == True:
+        fig, ax = plt.subplots()
         
-#         for i, pulse in enumerate(pulses):
-#             if customColors == None:
-#                 color = colorFader('blue','red',i,len(pulses))
-#             else:
-#                 color = customColors[i]
-#             ax.plot(pulse['Voltage (V)'],pulse['Current Density (mA/cm^2)'],color=color)
-#         ax.legend(legend)
-#         ax.set(title = title,
-#                ylabel = r'Current Density $(\frac{mA}{cm^2_{geo}})$',
-#                xlabel = 'Voltage (V)')
+        for i, pulse in enumerate(pulses):
+            if customColors == None:
+                color = colorFader('blue','red',i,len(pulses))
+            else:
+                color = customColors[i]
+            ax.plot(pulse['Voltage (V)'],pulse['Current Density (mA/cm^2)'],color=color)
+        ax.legend(legend)
+        ax.set(title = title,
+               ylabel = r'Current Density $(\frac{mA}{cm^2_{geo}})$',
+               xlabel = 'Voltage (V)')
         
-#         ax.axhline(0,color='k',zorder=0)
-#         ax.axvline(0,color='k',zorder=0)
-#         ax.axvline(-1.965,color='k',linestyle='--',zorder=0)
-#         ax.axvline(6.535,color='k',linestyle='--',zorder=0)
-#         ax.axvline(-0.335,color='k',linestyle='--',zorder=0)
-#         plt.show()
+        ax.axhline(0,color='k',zorder=0)
+        ax.axvline(0,color='k',zorder=0)
+        ax.axvline(-1.965,color='k',linestyle='--',zorder=0)
+        ax.axvline(6.535,color='k',linestyle='--',zorder=0)
+        ax.axvline(-0.335,color='k',linestyle='--',zorder=0)
+        plt.show()
         
-#         fig, ax = plt.subplots()
+        fig, ax = plt.subplots()
         
-#         for i, pulse in enumerate(pulses):
-#             if customColors == None:
-#                 color = colorFader('blue','red',i,len(pulses))
-#             else:
-#                 color = customColors[i]
-#             ax.plot(pulse['Voltage (V)'],pulse['Charge Density (mC/cm^2)'],color=color)
-#         ax.legend(legend)
-#         ax.set(title = title,
-#                ylabel = r'Charge Density $(\frac{mC}{cm^2_{geo}})$',
-#                xlabel = 'Voltage (V)')
-#         ax.axhline(0,color='k',zorder=0)
-#         ax.axvline(0,color='k',zorder=0)
-#         ax.axvline(-1.965,color='k',linestyle='--',zorder=0)
-#         ax.axvline(6.535,color='k',linestyle='--',zorder=0)
-#         ax.axvline(-0.335,color='k',linestyle='--',zorder=0)
-#         plt.show()
+        for i, pulse in enumerate(pulses):
+            if customColors == None:
+                color = colorFader('blue','red',i,len(pulses))
+            else:
+                color = customColors[i]
+            ax.plot(pulse['Voltage (V)'],pulse['Charge Density (mC/cm^2)'],color=color)
+        ax.legend(legend)
+        ax.set(title = title,
+               ylabel = r'Charge Density $(\frac{mC}{cm^2_{geo}})$',
+               xlabel = 'Voltage (V)')
+        ax.axhline(0,color='k',zorder=0)
+        ax.axvline(0,color='k',zorder=0)
+        ax.axvline(-1.965,color='k',linestyle='--',zorder=0)
+        ax.axvline(6.535,color='k',linestyle='--',zorder=0)
+        ax.axvline(-0.335,color='k',linestyle='--',zorder=0)
+        plt.show()
     
-#     return
+    return (fig, ax)
 
 def plotWaveform(pulse: pd.DataFrame, title: str, jv: bool, reference=pd.DataFrame()):
     """
