@@ -188,11 +188,12 @@ def plotCircuitProperties(circuitList: list[CustomCircuit], legendList: list[str
     return datadf
 
 def plotOneDRT():
-    
+    """Unfinished function.
+    """
     return
 
 def plotManyDRTs(eisDatas: list[pd.DataFrame], title: str, freqRange: list[float], legendList: list[str] = None, rbf_type='Gaussian',der_used='1st order',cv_type='GCV',reg_param=1E-4,shape_control='FWHM Coefficient',coeff=0.1):
-    """_summary_
+    """Calculates non-Bayesian DRT. May require extensive hyperparameter tuning. Use bayesDRT.py instead.
 
     Args:
         eisDatas (list[pd.DataFrame]): EIS data in pandas dataframe.
@@ -243,6 +244,32 @@ def plotManyDRTs(eisDatas: list[pd.DataFrame], title: str, freqRange: list[float
     plt.show()
     
     return (fig, ax)
+
+def generateCircuitFit(f: np.ndarray[float], Z: np.ndarray[complex], circuitString: str, initialGuess: list[float]):
+    """Takes in data from convertToImpedanceAnalysis and fits it to a specific circuit.
+
+    Args:
+        f (np.ndarray[float]): frequencies
+        Z (np.ndarray[complex]): impedances
+        circuitString (str): string of circuit, see impedance.py docs
+        initialGuess (list[float]): initial guesses for circuit parameters
+        
+    Returns:
+        circuit (CustomCircuit): can use this to plot
+    """
+    #generates circuit model
+    initialGuess = [400,50e-6,0,0,1,6]
+    circuit = CustomCircuit(circuitString,initial_guess=initialGuess)
+    circuit = circuit.fit(f,Z)
+    ZValues1 = circuit.predict(f)
+    
+    fig, ax = plt.subplots()
+    ax.plot(Z.real,-Z.imag,'ko')
+    ax.plot(ZValues1.real,-ZValues1.imag,'r-')
+    
+    plt.show()
+    
+    return circuit
 
 def predictCurrent(peisFilename,voltageWaveformFilename,pH,area,referencePotential):
     """Experimental function to use EIS impedance to predict current waveform from voltage waveform.
@@ -386,28 +413,3 @@ def getEISFromDynamicCA(filename, pH, area, referencePotential, irange, fundamen
     #saves pandas dataframe
         
     return output
-
-def generateCircuitFit(f,Z):
-    """Takes in data from convertToImpedanceAnalysis and fits it to a specific circuit.
-
-    Args:
-        f (np.ndarray[float]): frequencies
-        Z (np.ndarray[complex]): impedances
-        
-    Returns:
-        circuit (CustomCircuit): can use this to plot
-    """
-    #generates circuit model
-    circuit = 'p(p(R1,C1),p(R2,CPE2))-R0'
-    initialGuess = [400,50e-6,0,0,1,6]
-    circuit = CustomCircuit(circuit,initial_guess=initialGuess)
-    circuit = circuit.fit(f,Z)
-    ZValues1 = circuit.predict(f)
-    
-    fig, ax = plt.subplots()
-    ax.plot(Z.real,-Z.imag,'ko')
-    ax.plot(ZValues1.real,-ZValues1.imag,'r-')
-    
-    plt.show()
-    
-    return circuit
