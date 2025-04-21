@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 from impedance.models.circuits import CustomCircuit
 from impedance.preprocessing import cropFrequencies
-import os
 from pyDRTtools.runs import EIS_object, simple_run
 from scipy import fft
 import scipy as sc
@@ -69,13 +68,12 @@ def plotOneNyquist(eisData: pd.DataFrame, title: str, freqRange: list[float], fi
     
     return circuit
 
-def plotManyNyquists(eisDatas: list[pd.DataFrame], title: str, freqRange: list[float], fitModel: bool = False, circuitString: str = None,initialGuess: list[float] = [],bounds: tuple[list[float]] = ([],[]), legendList: list[str] = None):
+def plotManyNyquists(eisDatas: list[pd.DataFrame], title: str, fitModel: bool = False, circuitString: str = None,initialGuess: list[float] = [],bounds: tuple[list[float]] = ([],[]), legendList: list[str] = None):
     """Takes multiple EIS DataFrames and plots Nyquists + fits.
 
     Args:
         eisDatas (list[pd.DataFrame]): List of dataframes from ReadDataFiles.readPEIS.
         title (str): Title of samples.
-        freqRange (list[float]): [lower freq bound, upper freq bound]
         fitModel (bool, optional): Whether to fit a circuit model. Defaults to False.
         circuitString (str, optional): Description of circuit model. See impedance.py docs for more details. Defaults to None.
         initialGuess (list[float], optional): Initial guess of circuit model parameters. Defaults to [].
@@ -93,9 +91,6 @@ def plotManyNyquists(eisDatas: list[pd.DataFrame], title: str, freqRange: list[f
         
         #gets f and Z values
         f, Z = convertToImpedanceAnalysis(eisDatas[i])
-        
-        #crops frequencies
-        f, Z = cropFrequencies(f,Z,freqRange[0],freqRange[1])
         
         if fitModel:
             #generates circuit model

@@ -453,7 +453,7 @@ def convertToImpedanceAnalysis(data: pd.DataFrame):
     dataLength = len(frequency)
     realImpedance = data['Re(Z)/Ohm'].to_numpy()
     imagImpedance = -data['-Im(Z)/Ohm'].to_numpy()
-    impedance = np.zeros(dataLength,dtype=np.complex_)
+    impedance = np.zeros(dataLength,dtype=np.complex128)
     
     for i in range(0,dataLength):
         impedance[i] = complex(realImpedance[i],

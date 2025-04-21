@@ -2,7 +2,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from ReadDataFiles import colorFader, convertToImpedanceAnalysis
-from PEIS import plotManyNyquists
+#from PEIS import plotManyNyquists
 import pandas as pd
 
 from bayes_drt2.inversion import Inverter
@@ -80,7 +80,7 @@ def getDRT(eisData: pd.DataFrame):
         
     return (fig, axes)
 
-def plotCompareDRT(eisDatas: list[pd.DataFrame], title: str, legendList: list[str] = None):
+def plotManyDRTs(eisDatas: list[pd.DataFrame], title: str, legendList: list[str] = None):
     """Plots many DRTs.
 
     Args:
@@ -91,7 +91,7 @@ def plotCompareDRT(eisDatas: list[pd.DataFrame], title: str, legendList: list[st
     Returns:
         tuple(matplotlib.figure.Figure,matplotlib.axes._axes.Axes): fig and ax for further customization if necessary
     """
-    plotManyNyquists(eisDatas,title,freqRange,legendList=legendList)
+    #plotManyNyquists(eisDatas,title,freqRange,legendList=legendList)
     
     #automatically finds minimum and maximum of freqRange
     minFreq = np.inf
