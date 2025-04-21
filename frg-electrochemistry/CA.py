@@ -4,9 +4,20 @@ from scipy.stats import linregress
 from math import log10
 from ReadDataFiles import readCA, colorFader, calculateIntegral
 import re
+import pandas as pd
 
-def getTafel(filenameList,pH,area,referencePotential):
-    
+def getTafel(filenameList: list[str], pH: float, area: float, referencePotential: float):
+    """Gets Tafel slope from list of CAs.
+
+    Args:
+        filenameList (list[str]): Filenames of CAs.
+        pH (float): pH of electrolyte.
+        area (float): Area of working electrode in cm^2.
+        referencePotential (float): Reference electrode potential in V vs. SHE.
+
+    Returns:
+        tuple[list[float],list[float],LinRegressResult]: (overpotentialList,logCurrentDensityList,LinearRegression)
+    """
     thermodynamicPotential = 0 #V vs. RHE
     
     overpotentialList = []
@@ -23,8 +34,18 @@ def getTafel(filenameList,pH,area,referencePotential):
 
     return (overpotentialList,logCurrentDensityList,linearRegression)
 
-def plotTafel(tafelList: list[tuple],legendList,title,colors=None):
-    
+def plotTafel(tafelList: list[tuple], legendList: list[str], title: str, colors: list[str] = None):
+    """Plots list of Tafel slopes from one or many getTafel outputs.
+
+    Args:
+        tafelList (list[tuple]): List of tuples from getTafel.
+        legendList (list[str]): Legend list to describe tuples.
+        title (str): Title of plot overall.
+        colors (list[str], optional): Custom colors to use for each tuple. Defaults to None.
+
+    Returns:
+        tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
+    """
     fig,ax = plt.subplots()
     maxLims = [0,0]
     
@@ -61,21 +82,25 @@ def plotTafel(tafelList: list[tuple],legendList,title,colors=None):
     ax.legend()
     plt.show()
     
-    return
+    return (fig,ax)
 
-def plotCA(filenames,pH,area,referencePotential,title,legendList=None,filter: list[bool] = False):
-    
+def plotCA(caDatas: list[pd.DataFrame], title: str, legendList: list[str] = None):
+    """Plots multiple CAs.
+
+    Args:
+        caDatas (list[pd.DataFrame]): List of CAs from readCAs.
+        title (str): Title of plot.
+        legendList (list[str], optional): Legend list. Defaults to None.
+        
+    Returns:
+        tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
+    """
     fig, ax = plt.subplots()
     thermodynamicPotential = 0 #V vs. RHE
     
-    for i, filename in enumerate(filenames):
-        
-        if filter == False:
-            data = readCA(filename,pH,area,referencePotential)
-        else:
-            data = readCA(filename,pH,area,referencePotential,shouldRemoveNoise=filter[i])
-            
-        color = colorFader('blue','red',i,len(filenames))
+    for i, data in enumerate(caDatas):
+           
+        color = colorFader('blue','red',i,len(caDatas))
         if legendList == None:
             overpotential = (thermodynamicPotential-data['Ewe/mV'].mean())
             label = '{:3.0f} mV'.format(overpotential)
@@ -94,52 +119,44 @@ def plotCA(filenames,pH,area,referencePotential,title,legendList=None,filter: li
     
     plt.show()
 
-    return
+    return (fig, ax)
 
-def integrateCA(filenames,filter=False):
+def integrateCA(caDatas: list[pd.DataFrame]):
     """Integrates CA data to find total charge transferred.
 
     Args:
-        filenames (list[str]): List of CA filenames.
-        filter (list[bool]), optional: No filter by default, but selects which CAs to apply the noise filter to.
+        caDatas (list[pd.DataFrame]): List of CA DataFrames.
 
     Returns:
-        dict[experimentNumber] = (mol e-, expTime (s)): Returns experiment time and moles transferred.
+        list[tuple[float,float]] = (mol e-/cm^2, expTime (s)): Returns experiment time and moles transferred per area.
     """
     
-    molesDict = {}
+    molesList = []
     
-    for i, filename in enumerate(filenames):
+    for i, data in enumerate(caDatas):
         
-        if filter == False:
-            data = readCA(filename,1,1,1)
-        else:
-            data = readCA(filename,1,1,1,shouldRemoveNoise=filter[i])
-        
-        filename = filename.split('\\')[-1]
-        
-        experimentNumber = int(re.search(r'\d+', str(filename)).group())
         faradayConstant = 9.648533212331E4
-        coulombsTransferred = calculateIntegral(data['time/s'],
-                                                data['I/mA']/1000,
-                                                0,
-                                                [-np.inf,np.inf])
-        molesTransferred = coulombsTransferred/faradayConstant
+        coulombsTransferredPerArea = calculateIntegral(data['time/s'],
+                                                       data['j/mA*cm-2']/1000,
+                                                       0,
+                                                       [-np.inf,np.inf])
+        molesTransferredPerArea = coulombsTransferredPerArea/faradayConstant
         experimentTime = data['time/s'].max()
-        molesDict[experimentNumber] = (molesTransferred,experimentTime)
+        molesList.append((molesTransferredPerArea,experimentTime))
         
-    
-    return molesDict
+    return molesList
 
-def plotH2CA(h2Dict,electronDict,area,title,labels=None):
+def plotH2CA(h2List,electronList,title,labels=None): #find way to eliminate area from this
     """Plots integrated CA charge and H2 generated.
 
     Args:
-        h2Dict (dict[key]): Dictionary from readExcelSheet. Must match keys in electronDict.
-        electronDict (dict[key]): Dictionary from integrateCA. Must match keys in h2Dict.
-        area (float): Area of electrode in cm^2.
+        h2List (list[tuple[float,float]]): Dictionary from readExcelSheet. Must match order of electronList
+        electronList (list[tuple[float,float]]): Dictionary from integrateCA. Must match order of h2Dict.
         labels (list[str]): X-axis labels for experiments.
         title (str): Graph title.
+        
+    Returns:
+        tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
     """
     
     h2prodList = []
@@ -147,20 +164,20 @@ def plotH2CA(h2Dict,electronDict,area,title,labels=None):
     chargeList = []
     fig, ax = plt.subplots()
     
-    for key in electronDict:
+    for i, electronTuple in enumerate(electronList):
         
-        h2prod, h2err = h2Dict[key]
-        charge, time = electronDict[key]
+        h2prod, h2err = h2List[i]
+        charge, time = electronTuple
         
-        h2prod = h2prod*1E9/time/area #nmol/s/cm^2
-        h2err = h2err*1E9/time/area #nmol/s/cm^2
-        charge = abs(charge*1E9/time/area/2) #nmol/s/cm^2, charge divided by 2 for stoich
+        h2prod = h2prod*1E9/time #nmol/s/cm^2
+        h2err = h2err*1E9/time #nmol/s/cm^2
+        charge = abs(charge*1E9/time/2) #nmol/s/cm^2, charge divided by 2 for stoich
         
         h2prodList.append(h2prod)
         h2errList.append(h2err)
         chargeList.append(charge)
         
-    xList = [i+1 for i in range(len(electronDict))]
+    xList = [i+1 for i in range(len(electronList))]
     
     ax.errorbar(xList,
                 h2prodList,
@@ -190,4 +207,4 @@ def plotH2CA(h2Dict,electronDict,area,title,labels=None):
     
     plt.show()
     
-    return
+    return (fig, ax)

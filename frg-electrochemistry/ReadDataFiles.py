@@ -265,6 +265,10 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float, sho
     
     return data
 
+def buildCAList(filenameList):
+    
+    return
+
 def readPEIS(filename: str, freqRange: list[float] = None):
     """Reads potentiostatic electrochemical impedance spectroscopy data from Biologic into pandas dataframe.
 
@@ -666,15 +670,16 @@ def calculateIntegral(timeSeries: pd.Series, valueSeries: pd.Series, baseline: f
     #integrates
     return sc.integrate.trapezoid(y=valueSeries,x=timeSeries)
 
-def readExcelSheet(filename: str):
+def readExcelSheet(filename: str, area: float):
     """Gets H2 produced from Excel sheet. Ensure that the Excel sheet contains the correct analysis
     and that the Excel sheet names start with the experiment number.
 
     Args:
         filename (str): .xlsx file with GC data
+        area (float): area of electrode in cm^2 for normalization
         
     Returns:
-        dict[experimentNumber] = (H2 Value (mol), H2 Error (mol)): {int,(np.float64,np.float64)}
+        dict[experimentNumber] = (H2 Value (mol/cm^2), H2 Error (mol/cm^2)): {int,(np.float64,np.float64)}
     """
     
     finalDict = {}
@@ -702,7 +707,7 @@ def readExcelSheet(filename: str):
             if foundValue:
                 break
             
-        finalDict[experimentNumber] = (h2prod,h2err)
+        finalDict[experimentNumber] = (h2prod/area,h2err/area)
     
     return finalDict
 
