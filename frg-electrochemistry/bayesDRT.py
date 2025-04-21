@@ -1,7 +1,7 @@
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-from ReadDataFiles import colorFader, readPEIS, convertToImpedanceAnalysis
+from ReadDataFiles import colorFader, convertToImpedanceAnalysis
 from PEIS import plotManyNyquists
 import pandas as pd
 

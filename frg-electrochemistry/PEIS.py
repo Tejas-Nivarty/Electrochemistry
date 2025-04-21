@@ -9,7 +9,7 @@ from pyDRTtools.runs import EIS_object, simple_run
 from scipy import fft
 import scipy as sc
 
-def plotOneBode(data: pd.DataFrame, title: str):
+def plotOneBode(eisData: pd.DataFrame, title: str):
     """Plots a Bode plot from EIS data.
 
     Args:
@@ -22,9 +22,9 @@ def plotOneBode(data: pd.DataFrame, title: str):
     fig, ax1 = plt.subplots()
     ax2 = ax1.twinx()
     ax1.set_xscale('log')
-    ax1.plot(data['freq/Hz'],data['|Z|/Ohm'],'k')
+    ax1.plot(eisData['freq/Hz'],eisData['|Z|/Ohm'],'k')
     ax1.set_yscale('log')
-    ax2.plot(data['freq/Hz'],-data['Phase(Z)/deg'],'r')
+    ax2.plot(eisData['freq/Hz'],-eisData['Phase(Z)/deg'],'r')
     ax1.set(title = title + ' Bode Plot',
            xlabel = 'Frequency (Hz)',
            ylabel = 'Magnitude ($\Omega$)')

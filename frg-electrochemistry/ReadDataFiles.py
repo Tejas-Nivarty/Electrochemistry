@@ -265,9 +265,25 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float, sho
     
     return data
 
-def buildCAList(filenameList):
+def buildCAList(filenameList: list[str], pH: float, area: float, referencePotential: float):
+    """Takes list of filenames with same pH, area, and referencePotential and builds CA list.
+
+    Args:
+        filenameList (list[str]): List of filenames to read CVs from.
+        pH (float): pH of electrolyte for RHE conversion
+        area (float): geometric area of electrode in cm^2 for current density
+        referencePotential (float): potential of reference electrode vs. SHE in V
+
+    Returns:
+        list[pd.DataFrame]: List of DataFrames containing CV data.
+    """
+    dataList = []
     
-    return
+    for filename in filenameList:
+        data = readCA(filename,pH,area,referencePotential)
+        dataList.append(data)
+    
+    return dataList
 
 def readPEIS(filename: str, freqRange: list[float] = None):
     """Reads potentiostatic electrochemical impedance spectroscopy data from Biologic into pandas dataframe.

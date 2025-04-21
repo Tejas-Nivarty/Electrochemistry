@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 from scipy.stats import linregress
 from math import log10
 from ReadDataFiles import readCA, colorFader, calculateIntegral
-import re
 import pandas as pd
 
 def getTafel(filenameList: list[str], pH: float, area: float, referencePotential: float):
@@ -146,7 +145,7 @@ def integrateCA(caDatas: list[pd.DataFrame]):
         
     return molesList
 
-def plotH2CA(h2List,electronList,title,labels=None): #find way to eliminate area from this
+def plotH2CA(h2List,electronList,title,labels=None):
     """Plots integrated CA charge and H2 generated.
 
     Args:
