@@ -104,13 +104,12 @@ def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False):
     Returns:
         tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
     """
-    numFiles = len(dataList)
+    
     currentList = []
     scanRateList = []
     
-    for i in range(numFiles):
+    for i, data in enumerate(dataList):
         
-        data = dataList[i]
         numCycles = int(data['cycle number'].max())
         
         #takes last cycle
@@ -146,8 +145,8 @@ def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False):
     if not trasatti:
         
         #plots ECSA CVs
-        legendList = ['{:3.0f} '.format(i*1000)+r'$\frac{mV}{s}$' for i in scanRateList]
-        plotManyCVs(dataList,legendList,title+' EDLC CVs',horizontalLine=True,currentdensity=False)
+        legendList = ['{:3.0f} '.format(j*1000) + r'$\frac{mV}{s}$' for j in scanRateList]
+        plotManyCVs(dataList,title+' EDLC CVs',legendList=legendList,horizontalLine=True,currentdensity=False)
         
         #performs linear regression and plots
         result = linregress(scanRateList,currentList)

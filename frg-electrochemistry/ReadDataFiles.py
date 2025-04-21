@@ -121,10 +121,10 @@ def buildEDLCList(folderName: str, number: int, pH: float, area: float, referenc
         pH (float): pH that EDLC was taken at.
         area (float): Area of electrode for EDLC in cm^2.
         referencePotential (float): Potential of reference electrode
-        excludeLastX (int, optional): _description_. Defaults to 0.
+        excludeLastX (int, optional): Excludes last x files in EDLC. Use this to remove faster scans in case they're less equilibrated. Defaults to 0.
 
     Returns:
-        _type_: _description_
+        list[pd.DataFrame]: List of CVs for EDLC
     """
     twoDigit = False
     number = str(number)
@@ -197,6 +197,7 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float, sho
                                     'Q charge/discharge/mA.h',
                                     'half cycle',
                                     'Analog IN 2/V',
+                                    'Rcmp/Ohm',
                                     'Energy we charge/W.h',
                                     'Energy we discharge/W.h',
                                     'Energy ce charge/W.h',
