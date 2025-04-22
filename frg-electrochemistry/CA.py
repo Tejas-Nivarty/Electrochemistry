@@ -151,8 +151,8 @@ def plotH2CA(h2List,electronList,title,labels=None):
     Args:
         h2List (list[tuple[float,float]]): Dictionary from readExcelSheet. Must match order of electronList
         electronList (list[tuple[float,float]]): Dictionary from integrateCA. Must match order of h2Dict.
-        labels (list[str]): X-axis labels for experiments.
         title (str): Graph title.
+        labels (list[str]): X-axis labels for experiments. Default None.
         
     Returns:
         tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
