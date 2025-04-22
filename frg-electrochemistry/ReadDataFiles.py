@@ -4,6 +4,7 @@ import matplotlib as mpl
 import scipy as sc
 import re
 import os
+import datetime
 
 def readCV(filename: str, pH: float, area: float, referencePotential: float):
     """Reads cyclic voltammetry data from Biologic into Pandas dataframe.
@@ -19,41 +20,77 @@ def readCV(filename: str, pH: float, area: float, referencePotential: float):
     """
     if filename[-3:] == 'mpt':
         
-        #finds number of header lines
+        #finds number of header lines and whether it's one of pedram's files
         with open(filename, 'r') as file:
             file.readline()
             line = file.readline()
             numHeaderLines = int(re.findall(r'-?\d*\.?\d+', line)[0])
             
-        data = pd.read_csv(filename,
-                        sep='\s+',
-                        skiprows=numHeaderLines,
-                        names = ['mode',
-                                'ox/red',
-                                'error',
-                                'control changes',
-                                'counter inc.',
-                                'time/s',
-                                'control/V',
-                                'Ewe/V',
-                                'Ece/V',
-                                'I/mA',
-                                'cycle number',
-                                '(Q-Qo)/C',
-                                'I Range',
-                                'Analog IN 2/V',
-                                'Rcmp/Ohm',
-                                'step time/s',
-                                'Pwe/W',
-                                'Pce/W',
-                                'Pwe-ce/W',
-                                'Ewe-Ece/V',
-                                'Rew/Ohm',
-                                'Rce/Ohm',
-                                'Rwe-ce/Ohm'],
-                        index_col=False,
-                        dtype = np.float64,
-                        encoding='windows-1252')
+            # Reset file pointer to beginning
+            file.seek(0)
+            
+            # Initialize the variable
+            contains_pedram = False
+            
+            # Read through the file to find "Directory:" line
+            for line in file:
+                if 'Directory' in line and 'Pedram' in line:
+                    contains_pedram = True
+                    break
+                    
+        if contains_pedram:
+                data = pd.read_csv(filename,
+                            sep='\s+',
+                            skiprows=numHeaderLines,
+                            names = ['mode',
+                                    'ox/red',
+                                    'error',
+                                    'control changes',
+                                    'counter inc.',
+                                    'time/s',
+                                    'control/V',
+                                    'Ewe/V',
+                                    'I/mA',
+                                    'cycle number',
+                                    '(Q-Qo)/C',
+                                    'I Range',
+                                    'Rcmp/Ohm',
+                                    'step time/s',
+                                    'Pwe/W',
+                                    'Rwe/Ohm'],
+                            index_col=False,
+                            dtype = np.float64,
+                            encoding='windows-1252')
+        else:
+            data = pd.read_csv(filename,
+                            sep='\s+',
+                            skiprows=numHeaderLines,
+                            names = ['mode',
+                                    'ox/red',
+                                    'error',
+                                    'control changes',
+                                    'counter inc.',
+                                    'time/s',
+                                    'control/V',
+                                    'Ewe/V',
+                                    'Ece/V',
+                                    'I/mA',
+                                    'cycle number',
+                                    '(Q-Qo)/C',
+                                    'I Range',
+                                    'Analog IN 2/V',
+                                    'Rcmp/Ohm',
+                                    'step time/s',
+                                    'Pwe/W',
+                                    'Pce/W',
+                                    'Pwe-ce/W',
+                                    'Ewe-Ece/V',
+                                    'Rew/Ohm',
+                                    'Rce/Ohm',
+                                    'Rwe-ce/Ohm'],
+                            index_col=False,
+                            dtype = np.float64,
+                            encoding='windows-1252')
         
     else:
     
@@ -764,3 +801,82 @@ def readOCV(filename: str, pH: float, referencePotential: float):
     data['Ewe/mV'] = data['Ewe/V']*1000
     
     return data
+
+def buildTechniqueList(folder_path: str, techniqueName: str):
+    """
+    Finds all files of a specific technique from .mpt files in a folder
+    and returns them in chronological order (earliest acquisition first).
+    
+    Args:
+        folder_path (str): Path to the folder to search in.
+        techniqueName (str): Technique name. Common are 'Cyclic Voltammetry', 
+                             'Potentio Electrochemical Impedance Spectroscopy', 
+                             'Chronoamperometry / Chronocoulometry'
+        
+    Returns:
+        list[str]: List of full file paths to this technique in the folder, sorted by acquisition time
+    """
+    
+    matching_files = []
+    search_string = techniqueName
+    
+    # Verify the folder exists
+    if not os.path.isdir(folder_path):
+        print(f"Error: '{folder_path}' does not exist.")
+        return matching_files
+    
+    # Get all .mpt files in the folder
+    mpt_files = [f for f in os.listdir(folder_path) if f.endswith('.mpt')]
+    
+    if not mpt_files:
+        print(f"No .mpt files found in '{folder_path}'.")
+        return matching_files
+    
+    # Check each file
+    file_info = []  # Will store tuples of (file_path, acquisition_datetime)
+    for filename in mpt_files:
+        file_path = os.path.join(folder_path, filename)
+        try:
+            with open(file_path, 'r', encoding='windows-1252') as file:
+                # Check technique on fourth line
+                lines = file.readlines()
+                if len(lines) >= 4:
+                    fourth_line = lines[3]
+                    if search_string in fourth_line:
+                        # Look for acquisition date/time line
+                        acquisition_time = None
+                        for line in lines:
+                            if "Acquisition started on :" in line:
+                                # Extract the date/time using regex
+                                date_match = re.search(r'(\d{1,2}/\d{1,2}/\d{4} \d{1,2}:\d{2}:\d{2}\.\d{3})', line)
+                                if date_match:
+                                    date_str = date_match.group(1)
+                                    try:
+                                        # Parse the date/time string
+                                        acquisition_time = datetime.datetime.strptime(date_str, '%m/%d/%Y %H:%M:%S.%f')
+                                        break
+                                    except ValueError:
+                                        # If parsing fails, try alternative format
+                                        try:
+                                            acquisition_time = datetime.datetime.strptime(date_str, '%d/%m/%Y %H:%M:%S.%f')
+                                            break
+                                        except ValueError:
+                                            pass
+                        
+                        # If we found a valid acquisition time, add to list
+                        if acquisition_time:
+                            file_info.append((file_path, acquisition_time))
+                        else:
+                            # Fallback to modification time if acquisition time not found
+                            mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+                            file_info.append((file_path, mod_time))
+        except Exception as e:
+            print(f"Error reading file {filename}: {e}")
+    
+    # Sort the matched files by acquisition time (earliest first)
+    file_info.sort(key=lambda x: x[1])
+    
+    # Extract just the file paths from the sorted list
+    matching_files = [info[0] for info in file_info]
+    
+    return matching_files

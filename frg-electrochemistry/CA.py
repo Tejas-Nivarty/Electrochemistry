@@ -83,7 +83,7 @@ def plotTafel(tafelList: list[tuple], legendList: list[str], title: str, colors:
     
     return (fig,ax)
 
-def plotCA(caDatas: list[pd.DataFrame], title: str, legendList: list[str] = None):
+def plotManyCAs(caDatas: list[pd.DataFrame], title: str, legendList: list[str] = None):
     """Plots multiple CAs.
 
     Args:

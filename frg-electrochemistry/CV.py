@@ -47,21 +47,28 @@ def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] 
     Returns:
         tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
     """
+    
     numFiles = len(dataList)
+    
     fig, ax = plt.subplots()
+    
     if horizontalLine:
         ax.axhline(0,color='k')
     if verticalLine:
         ax.axvline(0,color='k')
+        
     for i in range(numFiles):
+        
         data = dataList[i]
         color = colorFader('blue','red',i,numFiles)
+        
         numCycles = int(data['cycle number'].max())
-        if cycleList == None:
+        
+        if cycleList == None: #if no specific cycle specified
             if numCycles == 1:
                 cycle = 1
             else:
-                cycle = numCycles - 1
+                cycle = numCycles - 1 #last cycle often gets cut off
         else:
             cycle = cycleList[i]
         dataSlice = data[data['cycle number'] == cycle]
