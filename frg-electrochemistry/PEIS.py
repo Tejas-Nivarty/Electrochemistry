@@ -33,13 +33,12 @@ def plotOneBode(eisData: pd.DataFrame, title: str):
     
     return (fig, [ax1, ax2])
 
-def plotOneNyquist(eisData: pd.DataFrame, title: str, freqRange: list[float], fitModel: bool = False, circuitString: str = None, initialGuess: list[float] = [], bounds: tuple[list[float]] = ([],[])):
+def plotOneNyquist(eisData: pd.DataFrame, title: str, fitModel: bool = False, circuitString: str = None, initialGuess: list[float] = [], bounds: tuple[list[float]] = ([],[])):
     """Takes EIS data and plots Nyquist.
 
     Args:
         EISData (pd.DataFrame): EIS Data from ReadDataFiles.readPEIS.
         title (str): title of plot + ' Nyquist Plot'
-        freqRange (list[float]): [lower freq bound, upper freq bound]
         fitModel (bool, optional): Whether to fit a circuit model. Defaults to False.
         circuitString (str, optional): Description of circuit model. See impedance.py docs for more details. Defaults to None.
         initialGuess (list[float], optional): Initial guess of circuit model parameters. Defaults to [].
@@ -50,7 +49,6 @@ def plotOneNyquist(eisData: pd.DataFrame, title: str, freqRange: list[float], fi
     """
     fig, ax = plt.subplots()
     f, Z = convertToImpedanceAnalysis(eisData)
-    f, Z = cropFrequencies(f,Z,freqRange[0],freqRange[1])
     if fitModel:
         circuit = CustomCircuit(circuitString,initial_guess=initialGuess)
         circuit = circuit.fit(f,Z,bounds)

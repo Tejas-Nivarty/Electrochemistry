@@ -62,7 +62,10 @@ def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] 
         data = dataList[i]
         color = colorFader('blue','red',i,numFiles)
         
-        numCycles = int(data['cycle number'].max())
+        try:
+            numCycles = int(data['cycle number'].max())
+        except ValueError: #empty dataframe, no data
+            continue
         
         if cycleList == None: #if no specific cycle specified
             if numCycles == 1:

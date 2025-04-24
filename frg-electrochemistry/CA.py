@@ -5,14 +5,11 @@ from math import log10
 from ReadDataFiles import readCA, colorFader, calculateIntegral
 import pandas as pd
 
-def getTafel(filenameList: list[str], pH: float, area: float, referencePotential: float):
+def getTafel(caList: list[pd.DataFrame]):
     """Gets Tafel slope from list of CAs.
 
     Args:
-        filenameList (list[str]): Filenames of CAs.
-        pH (float): pH of electrolyte.
-        area (float): Area of working electrode in cm^2.
-        referencePotential (float): Reference electrode potential in V vs. SHE.
+        caList (list[str]): DataFrame of CAs.
 
     Returns:
         tuple[list[float],list[float],LinRegressResult]: (overpotentialList,logCurrentDensityList,LinearRegression)
@@ -22,10 +19,11 @@ def getTafel(filenameList: list[str], pH: float, area: float, referencePotential
     overpotentialList = []
     logCurrentDensityList = []
     
-    for file in filenameList:
-        data = readCA(file,pH,area,referencePotential)
-        #excludes first 100 seconds of data
-        dataSlice = data[data['time/s'] > (data['time/s'].iloc[-1] - 500)]
+    for data in caList:
+        exclusionPercent = 0.2 #percent of time in the end to exclude. works for Tafels of all sizes
+        totalTime = data['time/s'].iloc[-1] - data['time/s'].iloc[0]
+        timeToExclude = totalTime*exclusionPercent
+        dataSlice = data[data['time/s'] > (data['time/s'].iloc[0] + timeToExclude)]
         overpotentialList.append(thermodynamicPotential-dataSlice['Ewe/mV'].mean())
         logCurrentDensityList.append(log10(-dataSlice['j/mA*cm-2'].mean()))
         
@@ -66,18 +64,18 @@ def plotTafel(tafelList: list[tuple], legendList: list[str], title: str, colors:
                 marker = 'o',
                 label=legendList[i]+tafelSlopeString+exchangeCurrentDensityString)
         
-        if (ax.get_ylim()[0] > maxLims[0]) or (ax.get_ylim()[1] > maxLims[1]):
-            maxLims = ax.get_ylim()
+        if ax.get_ylim()[1] > maxLims[1]:
+            maxLims[1] = ax.get_ylim()[1]
         
-        yValues = np.linspace(0,ax.get_ylim()[1]+20,3)
+        yValues = np.linspace(0,maxLims[1]+20,3)
         xValues = (yValues - linearRegression.intercept)/linearRegression.slope
         ax.plot(xValues,yValues,color=color,linestyle='--',label='_')
-        ax.set_ylim(maxLims)
+        #ax.set_ylim(maxLims)
         
     ax.set(title = title,
            xlabel = r'log(j $\frac{mA}{cm^2_{geo}}$)',
            ylabel = '$\eta$ (mV)',
-           ylim = [0,ax.get_ylim()[1]])
+           ylim = [0,maxLims[1]])
     ax.legend()
     plt.show()
     
