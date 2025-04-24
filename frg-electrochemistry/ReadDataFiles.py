@@ -805,7 +805,8 @@ def readOCV(filename: str, pH: float, referencePotential: float):
 def buildTechniqueList(folder_path: str, techniqueName: str):
     """
     Finds all files of a specific technique from .mpt files in a folder
-    and returns them in chronological order (earliest acquisition first).
+    and returns them in chronological order (earliest acquisition first). 
+    Mostly if files are mislabeled.
     
     Args:
         folder_path (str): Path to the folder to search in.
