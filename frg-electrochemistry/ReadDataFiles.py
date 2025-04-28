@@ -212,53 +212,70 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float, sho
             file.readline()
             line = file.readline()
             numHeaderLines = int(re.findall(r'-?\d*\.?\d+', line)[0])
-            
-        data = pd.read_csv(filename,
-                            sep='\s+',
-                            skiprows=numHeaderLines,
-                            names = ['mode',
-                                    'ox/red',
-                                    'error',
-                                    'control changes',
-                                    'Ns changes',
-                                    'counter inc.',
-                                    'Ns',
-                                    'time/s',
-                                    'control/V',
-                                    'Ewe/V',
-                                    'Ece/V',
-                                    'I/mA',
-                                    'dQ/C',
-                                    '(Q-Qo)/C',
-                                    'I range',
-                                    'Q charge/discharge/mA.h',
-                                    'half cycle',
-                                    'Analog IN 2/V',
-                                    'Rcmp/Ohm',
-                                    'Energy we charge/W.h',
-                                    'Energy we discharge/W.h',
-                                    'Energy ce charge/W.h',
-                                    'Energy ce discharge/W.h',
-                                    'Capacitance charge/muF',
-                                    'Capacitance discharge/muF',
-                                    'step time/s',
-                                    'Q discharge/mA.h',
-                                    'Q charge/mA.h',
-                                    'Capacity/mA.h',
-                                    'Efficiency/%',
-                                    'cycle number',
-                                    'Pwe/W',
-                                    'Pce/W',
-                                    'Pwe-ce/W',
-                                    'Ewe-Ece/V',
-                                    'Rwe/Ohm',
-                                    'Rce/Ohm',
-                                    'Rwe-ce/Ohm',
-                                    'Energy we-ce charge/W.h',
-                                    'Energy we-ce dischage/W.h'],
-                            index_col=False,
-                            dtype = np.float64,
-                            encoding='windows-1252')
+        
+        if numHeaderLines == 3: #EC Lab Express File
+            data = pd.read_csv(filename,
+                                sep='\s+',
+                                skiprows=numHeaderLines,
+                                names = ['mode',
+                                        'time/s',
+                                        'control/V',
+                                        'Ewe/V',
+                                        'I/mA',
+                                        'cycle number',
+                                        'Analog IN 2/V'
+                                        'Pwe/W',
+                                        'Rwe/Ohm'],
+                                index_col=False,
+                                dtype = np.float64,
+                                encoding='windows-1252')
+        else:
+            data = pd.read_csv(filename,
+                                sep='\s+',
+                                skiprows=numHeaderLines,
+                                names = ['mode',
+                                        'ox/red',
+                                        'error',
+                                        'control changes',
+                                        'Ns changes',
+                                        'counter inc.',
+                                        'Ns',
+                                        'time/s',
+                                        'control/V',
+                                        'Ewe/V',
+                                        'Ece/V',
+                                        'I/mA',
+                                        'dQ/C',
+                                        '(Q-Qo)/C',
+                                        'I range',
+                                        'Q charge/discharge/mA.h',
+                                        'half cycle',
+                                        'Analog IN 2/V',
+                                        'Rcmp/Ohm',
+                                        'Energy we charge/W.h',
+                                        'Energy we discharge/W.h',
+                                        'Energy ce charge/W.h',
+                                        'Energy ce discharge/W.h',
+                                        'Capacitance charge/muF',
+                                        'Capacitance discharge/muF',
+                                        'step time/s',
+                                        'Q discharge/mA.h',
+                                        'Q charge/mA.h',
+                                        'Capacity/mA.h',
+                                        'Efficiency/%',
+                                        'cycle number',
+                                        'Pwe/W',
+                                        'Pce/W',
+                                        'Pwe-ce/W',
+                                        'Ewe-Ece/V',
+                                        'Rwe/Ohm',
+                                        'Rce/Ohm',
+                                        'Rwe-ce/Ohm',
+                                        'Energy we-ce charge/W.h',
+                                        'Energy we-ce dischage/W.h'],
+                                index_col=False,
+                                dtype = np.float64,
+                                encoding='windows-1252')
             
     else:
     
@@ -843,6 +860,7 @@ def buildTechniqueList(folder_path: str, techniqueName: str):
                 lines = file.readlines()
                 if len(lines) >= 4:
                     fourth_line = lines[3]
+                    secondLine = lines[1]
                     if search_string in fourth_line:
                         # Look for acquisition date/time line
                         acquisition_time = None
@@ -869,6 +887,11 @@ def buildTechniqueList(folder_path: str, techniqueName: str):
                             file_info.append((file_path, acquisition_time))
                         else:
                             # Fallback to modification time if acquisition time not found
+                            mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+                            file_info.append((file_path, mod_time))
+                    elif 'Nb header lines : 3' in secondLine: #check if it's EC-Lab Express file meant to be read as a CA
+                        if search_string == 'Chronoamperometry / Chronocoulometry':
+                            # Fallback to modification time if acquisition time not found (no acquisition time in these EC-Lab Express Dynamic CAs)
                             mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
                             file_info.append((file_path, mod_time))
         except Exception as e:

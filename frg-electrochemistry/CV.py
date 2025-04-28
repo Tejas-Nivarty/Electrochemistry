@@ -76,10 +76,16 @@ def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] 
             cycle = cycleList[i]
         dataSlice = data[data['cycle number'] == cycle]
         if legendList == None:
+            
+            #finds scan rate and puts that on legend
+            dataSlice['Scan Rate (mV/s)'] = data['Ewe/mV'].diff()/data['time/s'].diff()
+            dataSlicePositive = dataSlice[dataSlice['Scan Rate (mV/s)'] > 0]
+            scanRate = dataSlicePositive['Scan Rate (mV/s)'].mean()
+            
             if currentdensity:
-                ax.plot(dataSlice['Ewe/mV'],dataSlice['j/mA*cm-2'],color = color)
+                ax.plot(dataSlice['Ewe/mV'],dataSlice['j/mA*cm-2'],color = color,label='{:3.0f}'.format(scanRate)+r' $\frac{mV}{s}$')
             else:
-                ax.plot(dataSlice['Ewe/mV'],dataSlice['I/A'],color = color)
+                ax.plot(dataSlice['Ewe/mV'],dataSlice['I/A'],color = color,label='{:3.0f}'.format(scanRate)+r' $\frac{mV}{s}$')
         else:
             if currentdensity:
                 ax.plot(dataSlice['Ewe/mV'],dataSlice['j/mA*cm-2'],color = color,label = legendList[i])
@@ -93,8 +99,9 @@ def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] 
         ax.set(title = title,
             xlabel = r'$mV_{RHE}$',
             ylabel = r'Current (A)')
-    if legendList != None:
-        ax.legend()
+
+    ax.legend()
+    
     if ylim:
         ax.set(ylim=ylim)
     if xlim:
