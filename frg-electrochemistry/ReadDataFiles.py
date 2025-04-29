@@ -26,71 +26,23 @@ def readCV(filename: str, pH: float, area: float, referencePotential: float):
             line = file.readline()
             numHeaderLines = int(re.findall(r'-?\d*\.?\d+', line)[0])
             
-            # Reset file pointer to beginning
+            headers = []
+            
+            #finds headers in file
             file.seek(0)
-            
-            # Initialize the variable
-            contains_pedram = False
-            
-            # Read through the file to find "Directory:" line
+            currLine = 1
             for line in file:
-                if 'Directory' in line and 'Pedram' in line:
-                    contains_pedram = True
-                    break
-                    
-        if contains_pedram:
-                data = pd.read_csv(filename,
-                            sep='\s+',
-                            skiprows=numHeaderLines,
-                            names = ['mode',
-                                    'ox/red',
-                                    'error',
-                                    'control changes',
-                                    'counter inc.',
-                                    'time/s',
-                                    'control/V',
-                                    'Ewe/V',
-                                    'I/mA',
-                                    'cycle number',
-                                    '(Q-Qo)/C',
-                                    'I Range',
-                                    'Rcmp/Ohm',
-                                    'step time/s',
-                                    'Pwe/W',
-                                    'Rwe/Ohm'],
-                            index_col=False,
-                            dtype = np.float64,
-                            encoding='windows-1252')
-        else:
-            data = pd.read_csv(filename,
-                            sep='\s+',
-                            skiprows=numHeaderLines,
-                            names = ['mode',
-                                    'ox/red',
-                                    'error',
-                                    'control changes',
-                                    'counter inc.',
-                                    'time/s',
-                                    'control/V',
-                                    'Ewe/V',
-                                    'Ece/V',
-                                    'I/mA',
-                                    'cycle number',
-                                    '(Q-Qo)/C',
-                                    'I Range',
-                                    'Analog IN 2/V',
-                                    'Rcmp/Ohm',
-                                    'step time/s',
-                                    'Pwe/W',
-                                    'Pce/W',
-                                    'Pwe-ce/W',
-                                    'Ewe-Ece/V',
-                                    'Rew/Ohm',
-                                    'Rce/Ohm',
-                                    'Rwe-ce/Ohm'],
-                            index_col=False,
-                            dtype = np.float64,
-                            encoding='windows-1252')
+                if currLine == numHeaderLines:
+                    headers = line.strip().split('\t')
+                currLine += 1
+
+        data = pd.read_csv(filename,
+                        sep='\s+',
+                        skiprows=numHeaderLines,
+                        names = headers,
+                        index_col=False,
+                        dtype = np.float64,
+                        encoding='windows-1252')
         
     else:
     
@@ -118,6 +70,10 @@ def readCV(filename: str, pH: float, area: float, referencePotential: float):
                         dtype = np.float64,
                         engine='python')
     
+    if '<I>/mA' in data.columns:
+        data['I/mA'] = data['<I>/mA']
+    if '<Ewe>/V' in data.columns:
+        data['Ewe/V'] = data['<Ewe>/V']
     data['I/A'] = data['I/mA']/1000
     data['j/mA*cm-2'] = data['I/mA']/area
     data['Ewe/V'] = data['Ewe/V'] + referencePotential + 0.059*pH

@@ -143,13 +143,26 @@ def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False):
         dataSlicePositive = dataSlice[dataSlice['Scan Rate (V/s)'] > 0]
         scanRateList.append(dataSlicePositive['Scan Rate (V/s)'].mean())
         
-        #uses control voltage to split into anodic and cathodic sweeps
-        # Find the turning point (where voltage changes direction)
+        # Calculate first derivative
         voltage_diff = np.diff(dataSlice['control/V'])
-        turn_idx = np.where(np.diff(np.signbit(voltage_diff)))[0][0]
+
+        # Find where first derivative changes sign (this is the turning point)
+        turn_idx = np.where(np.diff(np.sign(voltage_diff)))[0]
+
+        # If multiple turning points are found, select the most prominent one
+        # (typically the one with the largest absolute change in derivative)
+        turn_idx = turn_idx[0]
+
+        # Adjust index to match original data (np.diff reduces length by 1)
+        turn_idx += 1
+
         # Split into forward and reverse scans
         forwardSlice = dataSlice.iloc[:turn_idx+1]
         reverseSlice = dataSlice.iloc[turn_idx:]
+        
+        plt.plot(dataSlice['time/s'],dataSlice['control/V'],'k')
+        plt.plot(dataSlice['time/s'].iloc[0:-1],voltage_diff,'k')
+        plt.show()
         
         #finds maximum oxidative and maximum reductive current
         forwardSliceLatestTimeIndex = forwardSlice['time/s'].idxmax()
