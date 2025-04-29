@@ -143,26 +143,73 @@ def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False):
         dataSlicePositive = dataSlice[dataSlice['Scan Rate (V/s)'] > 0]
         scanRateList.append(dataSlicePositive['Scan Rate (V/s)'].mean())
         
-        # Calculate first derivative
-        voltage_diff = np.diff(dataSlice['control/V'])
+        # Solution that properly CONCATENATES forward and reverse segments
+        voltage = dataSlice['control/V'].values
+        time = dataSlice['time/s'].values
 
-        # Find where first derivative changes sign (this is the turning point)
-        turn_idx = np.where(np.diff(np.sign(voltage_diff)))[0]
+        # Find ALL turning points using derivative
+        voltage_diff = np.diff(voltage)
+        sign_changes = np.diff(np.sign(voltage_diff))
+        turning_indices = np.where(sign_changes)[0] + 1
 
-        # If multiple turning points are found, select the most prominent one
-        # (typically the one with the largest absolute change in derivative)
-        turn_idx = turn_idx[0]
+        # Also consider extrema
+        turning_indices = np.append(turning_indices, [np.argmin(voltage), np.argmax(voltage)])
+        turning_indices = np.sort(np.unique(turning_indices))
 
-        # Adjust index to match original data (np.diff reduces length by 1)
-        turn_idx += 1
+        # print(f"Found {len(turning_indices)} turning points at: {turning_indices}")
 
-        # Split into forward and reverse scans
-        forwardSlice = dataSlice.iloc[:turn_idx+1]
-        reverseSlice = dataSlice.iloc[turn_idx:]
+        # Create empty DataFrames for concatenated segments
+        forwardSlice = pd.DataFrame()
+        reverseSlice = pd.DataFrame()
+
+        # Determine sweep direction
+        going_up = voltage_diff[0] > 0
+
+        # Loop through segments and concatenate to appropriate slice
+        start_idx = 0
+        for i, turn_idx in enumerate(turning_indices):
+            # Get current segment
+            segment = dataSlice.iloc[start_idx:turn_idx+1].copy()
+            
+            # Check segment direction (using average derivative)
+            if len(segment) > 1:
+                segment_diff = np.diff(segment['control/V'].values)
+                segment_direction = np.mean(segment_diff) > 0
+                
+                # Add segment to appropriate slice based on direction
+                if segment_direction == going_up:
+                    # This is a forward segment
+                    forwardSlice = pd.concat([forwardSlice, segment], ignore_index=True)
+                else:
+                    # This is a reverse segment
+                    reverseSlice = pd.concat([reverseSlice, segment], ignore_index=True)
+            
+            # Next segment starts at this turning point
+            start_idx = turn_idx
+            
+        # Add final segment
+        final_segment = dataSlice.iloc[start_idx:].copy()
+        if len(final_segment) > 1:
+            final_diff = np.diff(final_segment['control/V'].values)
+            final_direction = np.mean(final_diff) > 0
+            
+            if final_direction == going_up:
+                forwardSlice = pd.concat([forwardSlice, final_segment], ignore_index=True)
+            else:
+                reverseSlice = pd.concat([reverseSlice, final_segment], ignore_index=True)
+
+        # # Verify the concatenation worked
+        # print(f"Forward slice: {len(forwardSlice)} points")
+        # print(f"Reverse slice: {len(reverseSlice)} points")
+
+        # # Debug info
+        # print(f"Split at index {turn_idx}/{len(voltage)}")
+        # print(f"Forward scan: {len(forwardSlice)} points, {voltage[0]:.3f}V → {voltage[turn_idx]:.3f}V")
+        # print(f"Reverse scan: {len(reverseSlice)} points, {voltage[turn_idx]:.3f}V → {voltage[-1]:.3f}V")
         
-        plt.plot(dataSlice['time/s'],dataSlice['control/V'],'k')
-        plt.plot(dataSlice['time/s'].iloc[0:-1],voltage_diff,'k')
-        plt.show()
+        # plt.plot(forwardSlice['time/s'],forwardSlice['control/V'],'k')
+        # plt.plot(reverseSlice['time/s'],reverseSlice['control/V'],'r--')
+        # plt.show()
         
         #finds maximum oxidative and maximum reductive current
         forwardSliceLatestTimeIndex = forwardSlice['time/s'].idxmax()
