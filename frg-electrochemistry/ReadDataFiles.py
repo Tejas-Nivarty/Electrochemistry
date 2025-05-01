@@ -168,70 +168,22 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float, sho
             file.readline()
             line = file.readline()
             numHeaderLines = int(re.findall(r'-?\d*\.?\d+', line)[0])
-        
-        if numHeaderLines == 3: #EC Lab Express File
-            data = pd.read_csv(filename,
-                                sep='\s+',
-                                skiprows=numHeaderLines,
-                                names = ['mode',
-                                        'time/s',
-                                        'control/V',
-                                        'Ewe/V',
-                                        'I/mA',
-                                        'cycle number',
-                                        'Analog IN 2/V'
-                                        'Pwe/W',
-                                        'Rwe/Ohm'],
-                                index_col=False,
-                                dtype = np.float64,
-                                encoding='windows-1252')
-        else:
-            data = pd.read_csv(filename,
-                                sep='\s+',
-                                skiprows=numHeaderLines,
-                                names = ['mode',
-                                        'ox/red',
-                                        'error',
-                                        'control changes',
-                                        'Ns changes',
-                                        'counter inc.',
-                                        'Ns',
-                                        'time/s',
-                                        'control/V',
-                                        'Ewe/V',
-                                        'Ece/V',
-                                        'I/mA',
-                                        'dQ/C',
-                                        '(Q-Qo)/C',
-                                        'I range',
-                                        'Q charge/discharge/mA.h',
-                                        'half cycle',
-                                        'Analog IN 2/V',
-                                        'Rcmp/Ohm',
-                                        'Energy we charge/W.h',
-                                        'Energy we discharge/W.h',
-                                        'Energy ce charge/W.h',
-                                        'Energy ce discharge/W.h',
-                                        'Capacitance charge/muF',
-                                        'Capacitance discharge/muF',
-                                        'step time/s',
-                                        'Q discharge/mA.h',
-                                        'Q charge/mA.h',
-                                        'Capacity/mA.h',
-                                        'Efficiency/%',
-                                        'cycle number',
-                                        'Pwe/W',
-                                        'Pce/W',
-                                        'Pwe-ce/W',
-                                        'Ewe-Ece/V',
-                                        'Rwe/Ohm',
-                                        'Rce/Ohm',
-                                        'Rwe-ce/Ohm',
-                                        'Energy we-ce charge/W.h',
-                                        'Energy we-ce dischage/W.h'],
-                                index_col=False,
-                                dtype = np.float64,
-                                encoding='windows-1252')
+            
+            #finds headers in file
+            file.seek(0)
+            currLine = 1
+            for line in file:
+                if currLine == numHeaderLines:
+                    headers = line.strip().split('\t')
+                currLine += 1
+
+        data = pd.read_csv(filename,
+                            sep='\s+',
+                            skiprows=numHeaderLines,
+                            names = headers,
+                            index_col=False,
+                            dtype = np.float64,
+                            encoding='windows-1252')
             
     else:
     
@@ -262,6 +214,11 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float, sho
                         index_col=False,
                         dtype = np.float64,
                         encoding='unicode_escape')
+    
+    if '<I>/mA' in data.columns:
+        data['I/mA'] = data['<I>/mA']
+    if '<Ewe>/V' in data.columns:
+        data['Ewe/V'] = data['<Ewe>/V']
     
     if shouldRemoveNoise:
         data = removeNoise(data)
@@ -314,71 +271,18 @@ def readPEIS(filename: str, freqRange: list[float] = None):
             line = file.readline()
             numHeaderLines = int(re.findall(r'-?\d*\.?\d+', line)[0])
             
+            #finds headers in file
+            file.seek(0)
+            currLine = 1
+            for line in file:
+                if currLine == numHeaderLines:
+                    headers = line.strip().split('\t')
+                currLine += 1
+            
         data = pd.read_csv(filename,
                         sep='\s+',
                         skiprows=numHeaderLines,
-                        names = ['freq/Hz',
-                                'Re(Z)/Ohm',
-                                '-Im(Z)/Ohm',
-                                '|Z|/Ohm',
-                                'Phase(Z)/deg',
-                                'time/s',
-                                '<Ewe>/V',
-                                '<I>/mA',
-                                'Cs/uF',
-                                'Cp/uF',
-                                'cycle number',
-                                'I Range',
-                                '|Ewe|/V',
-                                '|I|/A',
-                                'Ns',
-                                '(Q-Qo)/mA.h',
-                                '<Ece>/V',
-                                '|Ece|/V',
-                                'Phase(Zce)/deg',
-                                '|Zce|/Ohm',
-                                'Re(Zce)/Ohm',
-                                '-Im(Zce)/Ohm',
-                                'Phase(Zwe-ce)/deg',
-                                '|Zwe-ce|/Ohm',
-                                'Re(Zwe-ce)/Ohm',
-                                '-Im(Zwe-ce)/Ohm',
-                                'Analog IN 2/V',
-                                'Re(Y)/Ohm-1',
-                                'Im(Y)/Ohm-1',
-                                '|Y|/Ohm-1',
-                                'Phase(Y)/deg',
-                                'Re(C)/nF',
-                                'Im(C)/nF',
-                                '|C|/nF',
-                                'Phase(C)/deg',
-                                'Re(M)',
-                                'Im(M)',
-                                '|M|',
-                                'Phase(M)/deg',
-                                'Re(Permittivity)',
-                                'Im(Permittivity)',
-                                '|Permittivity|',
-                                'Phase(Permittivity)/deg',
-                                'Re(Resistivity)/Ohm.cm',
-                                'Im(Resistivity)/Ohm.cm',
-                                '|Resistivity|/Ohm.cm',
-                                'Phase(Resistivity)/deg',
-                                'Re(Conductivity)/mS/cm',
-                                'Im(Conductivity)/mS/cm',
-                                '|Conductivity|/mS/cm',
-                                'Phase(Conductivity)/deg',
-                                'Tan(Delta)',
-                                'Loss Angle(Delta)/deg',
-                                'dq/mA.h',
-                                'Pwe/W',
-                                'Pce/W',
-                                'Pwe-ce/W',
-                                '<Ewe-Ece>/V',
-                                'Rwe/Ohm',
-                                'Rce/Ohm',
-                                'Rwe-ce/Ohm',
-                                'Ewe-Ece/V'],
+                        names = headers,
                         index_col=False,
                         dtype = np.float64,
                         encoding='windows-1252')
@@ -410,6 +314,8 @@ def readPEIS(filename: str, freqRange: list[float] = None):
                         index_col=False,
                         dtype = np.float64,
                         encoding='unicode_escape')
+        
+        
         
     #cleans data to remove points where Synology interferes with saving data
     data = data[~((data['time/s'] == 0) & (data['<I>/mA'] == 0))]

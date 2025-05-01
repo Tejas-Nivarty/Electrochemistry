@@ -127,7 +127,10 @@ def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False):
     
     for i, data in enumerate(dataList):
         
-        numCycles = int(data['cycle number'].max())
+        try:
+            numCycles = int(data['cycle number'].max())
+        except ValueError: #empty dataframe most likely
+            continue
         
         #takes last cycle
         if numCycles == 1:
