@@ -719,7 +719,9 @@ def buildTechniqueList(folder_path: str, techniqueName: str):
         try:
             with open(file_path, 'r', encoding='windows-1252') as file:
                 # Check technique on fourth line
-                lines = file.readlines(100) #this is what causes a slowdown but not worth it to fix
+                lines = file.readlines(10000)
+                print('hi')
+                print(len(lines))
                 if len(lines) >= 4:
                     fourth_line = lines[3]
                     secondLine = lines[1]

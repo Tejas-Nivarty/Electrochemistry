@@ -128,7 +128,9 @@ def plotManyDRTs(eisDatas: list[pd.DataFrame], title: str, legendList: list[str]
         gammaHi = inv_hmc.predict_distribution(tau=timeConstantArray,percentile=50+(confInt/2))
         
         if legendList == None:
-            ax.plot(timeConstantArray,gammaMean,color=color)
+            #finds potential at which EIS was taken
+            potential = eisDatas[i]['<Ewe>/V'].mean()*1000
+            ax.plot(timeConstantArray,gammaMean,color=color,label='{:3.0f}'.format(potential)+r' $mV_{ref}$')
         else:
             ax.plot(timeConstantArray,gammaMean,color=color,label=legendList[i])
             
@@ -136,8 +138,7 @@ def plotManyDRTs(eisDatas: list[pd.DataFrame], title: str, legendList: list[str]
         
         continue
     
-    if legendList != None:
-        ax.legend()
+    ax.legend()
     ax.set(ylabel = r'$\gamma$ ($\Omega$)',
             xlabel = r'Time Constant (s)',
             xscale='log')
