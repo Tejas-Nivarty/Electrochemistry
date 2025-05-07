@@ -80,13 +80,14 @@ def getDRT(eisData: pd.DataFrame):
         
     return (fig, axes)
 
-def plotManyDRTs(eisDatas: list[pd.DataFrame], title: str, legendList: list[str] = None):
+def plotManyDRTs(eisDatas: list[pd.DataFrame], title: str, legendList: list[str] = None, logResistance = False):
     """Plots many DRTs.
 
     Args:
         eisDatas (list[pd.DataFrame]): List of EIS DataFrames.
         title (str): Title of DRT plot.
-        legendList (list[str], optional): _description_. Defaults to None.
+        legendList (list[str], optional): List of legend elements. Defaults to potential that EIS was taken at.
+        logResistance (bool, optional): Plots resistance in log format for better visualizing series.
 
     Returns:
         tuple(matplotlib.figure.Figure,matplotlib.axes._axes.Axes): fig and ax for further customization if necessary
@@ -142,6 +143,11 @@ def plotManyDRTs(eisDatas: list[pd.DataFrame], title: str, legendList: list[str]
     ax.set(ylabel = r'$\gamma$ ($\Omega$)',
             xlabel = r'Time Constant (s)',
             xscale='log')
+    
+    if logResistance:
+        ax.set_yscale('symlog', linthresh=1)
+        ax.set_ylim([0,ax.get_ylim()[1]])
+    
     plt.show()
     
     return (fig, ax)
