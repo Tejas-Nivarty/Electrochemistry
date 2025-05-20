@@ -27,7 +27,9 @@ def plotOneBode(eisData: pd.DataFrame, title: str):
     ax1.set(title = title + ' Bode Plot',
            xlabel = 'Frequency (Hz)',
            ylabel = 'Magnitude ($\Omega$)')
-    ax2.set(ylabel = '-Phase (deg)')
+    ax2.set_ylabel('-Phase (deg)', color='r')
+    ax2.tick_params(axis='y', labelcolor='r', color='r')
+    ax2.spines['right'].set_color('r')
     
     plt.show()
     
@@ -105,7 +107,7 @@ def plotManyNyquists(eisDatas: list[pd.DataFrame], title: str, fitModel: bool = 
         #plots results
         color = colorFader('blue','red',i,numberOfPlots)
         if legendList != None:
-            ax.plot(Z.real,-Z.imag,'o',color=color,label=legendList[i])
+            ax.plot(Z.real,-Z.imag,'o--',color=color,label=legendList[i])
         else:
             #finds potential at which EIS was taken
             potential = eisDatas[i]['<Ewe>/V'].mean()*1000
@@ -124,12 +126,13 @@ def plotManyNyquists(eisDatas: list[pd.DataFrame], title: str, fitModel: bool = 
     
     return circuitList
 
-def plotCircuitProperties(circuitList: list[CustomCircuit], legendList: list[str]):
+def plotCircuitProperties(circuitList: list[CustomCircuit], legendList: list[str], xLabel: str = None):
     """Takes circuits from plotOneNyquist and plotManyNyquists and plots them in the order of the list. Requires same circuitstring.
 
     Args:
         circuitList (list[CustomCircuit]): List of fitted circuits.
-        legendList (list[str]): List of labels for circuits (x-axis labels)
+        legendList (list[str]): List of labels for circuits (x-axis tick labels)
+        xLabel (str, optional): Label for x-axis overall
 
     Returns:
         pd.DataFrame: circuit properties and errors 
@@ -175,6 +178,8 @@ def plotCircuitProperties(circuitList: list[CustomCircuit], legendList: list[str
                ylabel = parameter + ' (' + units[i] + ')',
                xticks = range(numberOfCircuits),
                xticklabels = legendList)
+        if xLabel != None:
+            ax.set_xlabel(xLabel)
         
         plt.show()
     
