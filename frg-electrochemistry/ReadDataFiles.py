@@ -6,7 +6,7 @@ import re
 import os
 import datetime
 
-def readCV(filename: str, pH: float, area: float, referencePotential: float):
+def readCV(filename: str, pH: float, area: float, referencePotential: float, compensationAmount: float = 0.15):
     """Reads cyclic voltammetry data from Biologic into Pandas dataframe.
 
     Args:
@@ -14,6 +14,7 @@ def readCV(filename: str, pH: float, area: float, referencePotential: float):
         pH (float): pH of electrolyte for RHE conversion
         area (float): geometric area of electrode in cm^2 for current density
         referencePotential (float): potential of reference electrode vs. SHE in V
+        compensationAmount (float, default 0.15): amount already compensated by potentiostat
 
     Returns:
         pd.DataFrame: dataframe of CV data
@@ -74,6 +75,14 @@ def readCV(filename: str, pH: float, area: float, referencePotential: float):
         data['I/mA'] = data['<I>/mA']
     if '<Ewe>/V' in data.columns:
         data['Ewe/V'] = data['<Ewe>/V']
+    if 'Rcmp/Ohm' in data.columns:
+        solutionResistance = data['Rcmp/Ohm'].mean()
+    else:
+        if pH == 13:
+            solutionResistance = 45
+        else: #pH 14 usually
+            solutionResistance = 5
+    data['Ewe/V'] = data['Ewe/V'] - (data['I/mA']*0.001*solutionResistance*compensationAmount)
     data['I/A'] = data['I/mA']/1000
     data['j/mA*cm-2'] = data['I/mA']/area
     data['Ewe/V'] = data['Ewe/V'] + referencePotential + 0.059*pH
@@ -147,7 +156,7 @@ def buildEDLCList(folderName: str, number: int, pH: float, area: float, referenc
 
     return buildCVList(edlcFiles,pH,area,referencePotential)
 
-def readCA(filename: str, pH: float, area: float, referencePotential: float, shouldRemoveNoise: bool = False): #area is in cm^2
+def readCA(filename: str, pH: float, area: float, referencePotential: float, shouldRemoveNoise: bool = False, compensationAmount: float = 0.15): #area is in cm^2
     """Reads chronoamperometry data from Biologic into pandas dataframe.
 
     Args:
@@ -155,7 +164,8 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float, sho
         pH (float): pH of electrolyte for RHE conversion
         area (float): geometric area of electrode in cm^2 for current density
         referencePotential (float): potential of reference electrode vs. SHE in V
-        shouldRemoveNoise (bool): if true, will remove standard noise using ReadDataFiles.removeNoise
+        shouldRemoveNoise (bool, default False): if true, will remove standard noise using ReadDataFiles.removeNoise
+        compensationAmount (float, default 0.15): amount already compensated by potentiostat
 
     Returns:
         pd.DataFrame: dataframe of CA data
@@ -218,7 +228,15 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float, sho
     if '<I>/mA' in data.columns:
         data['I/mA'] = data['<I>/mA']
     if '<Ewe>/V' in data.columns:
-        data['Ewe/V'] = data['<Ewe>/V']
+        data['Ewe/V'] = data['<Ewe>/V']  
+    if 'Rcmp/Ohm' in data.columns:
+        solutionResistance = data['Rcmp/Ohm'].mean()
+    else:
+        if pH == 13:
+            solutionResistance = 45
+        else: #pH 14 usually
+            solutionResistance = 5
+    data['Ewe/V'] = data['Ewe/V'] - (data['I/mA']*0.001*solutionResistance*compensationAmount)
     
     if shouldRemoveNoise:
         data = removeNoise(data)
@@ -378,7 +396,7 @@ def convertToImpedanceAnalysis(data: pd.DataFrame):
     
     return (frequency,impedance)
 
-def readOSC(filename: str,pH: float, area: float, referencePotential: float, irange: str, stretch: float = 1):
+def readOSC(filename: str,pH: float, area: float, referencePotential: float, irange: str, stretch: float = 1, solutionResistance: float = None, compensationAmount: float = 1):
     """Reads oscilloscope .csv from Picoscope.
 
     Args:
@@ -388,6 +406,8 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
         referencePotential (float): potential of reference electrode vs. SHE in V
         irange (str): irange of measurement; '2A', '1A', '100mA', '10mA' are acceptable
         stretch (float, optional): For 1 Hz, typically 4, for 10 Hz, typically 2. Defaults to 1.
+        solutionResistance (float, default None): resistance to compensate for in Ohms. will try to find default using pH if not specified
+        compensationAmount (float, default 1): amount of uncompensated resistance
 
     Returns:
         pd.DataFrame: dataframe containing oscilloscope values
@@ -432,6 +452,14 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
     else:
         data['Voltage (V)'] = data['ch2Avg']
         data['Current (A)'] = data['ch1Avg']
+        
+    #finds and compensates resistance
+    if solutionResistance == None:
+        if pH == 13:
+            solutionResistance = 45
+        else: #pH = 14
+            solutionResistance = 5
+    data['Voltage (V)'] = data['Voltage (V)'] - (data['Current (A)']*solutionResistance*compensationAmount)
     
     data['Time (ms)'] *= stretch
     data = data[data['Time (ms)'] < (data['Time (ms)'].max()/stretch)]
