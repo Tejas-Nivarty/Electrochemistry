@@ -64,7 +64,8 @@ def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] 
         
         try:
             numCycles = int(data['cycle number'].max())
-        except ValueError: #empty dataframe, no data
+        except Exception as e: #empty dataframe, no data
+            print('exception')
             continue
         
         if cycleList == None: #if no specific cycle specified
@@ -87,10 +88,13 @@ def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] 
             else:
                 ax.plot(dataSlice['Ewe/mV'],dataSlice['I/A'],color = color,label='{:3.0f}'.format(scanRate)+r' $\frac{mV}{s}$')
         else:
-            if currentdensity:
-                ax.plot(dataSlice['Ewe/mV'],dataSlice['j/mA*cm-2'],color = color,label = legendList[i])
-            else:
-                ax.plot(dataSlice['Ewe/mV'],dataSlice['I/A'],color = color,label = legendList[i])
+            try:
+                if currentdensity:
+                    ax.plot(dataSlice['Ewe/mV'],dataSlice['j/mA*cm-2'],color = color,label = legendList[i])
+                else:
+                    ax.plot(dataSlice['Ewe/mV'],dataSlice['I/A'],color = color,label = legendList[i])
+            except IndexError:
+                continue
     if currentdensity:
         ax.set(title = title,
             xlabel = r'$mV_{RHE}$',
@@ -129,7 +133,7 @@ def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False):
         
         try:
             numCycles = int(data['cycle number'].max())
-        except ValueError: #empty dataframe most likely
+        except Exception as e: #empty dataframe most likely
             continue
         
         #takes last cycle

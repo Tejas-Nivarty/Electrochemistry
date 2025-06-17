@@ -14,7 +14,7 @@ def readCV(filename: str, pH: float, area: float, referencePotential: float, com
         pH (float): pH of electrolyte for RHE conversion
         area (float): geometric area of electrode in cm^2 for current density
         referencePotential (float): potential of reference electrode vs. SHE in V
-        compensationAmount (float, default 0.15): amount already compensated by potentiostat
+        compensationAmount (float, default 0.15): amount not compensated by potentiostat
 
     Returns:
         pd.DataFrame: dataframe of CV data
@@ -146,7 +146,7 @@ def buildEDLCList(folderName: str, number: int, pH: float, area: float, referenc
             isEDLC = True
         if (file[-3:] != 'txt') and (file[-3:] != 'mpt'):
             isEDLC = False
-        if 'CA' in file:
+        if ('CA' in file) or ('WAIT' in file):
             isEDLC = False
         if isEDLC:
             edlcFiles.append(folderName + '\\' + file)
@@ -165,7 +165,7 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float, sho
         area (float): geometric area of electrode in cm^2 for current density
         referencePotential (float): potential of reference electrode vs. SHE in V
         shouldRemoveNoise (bool, default False): if true, will remove standard noise using ReadDataFiles.removeNoise
-        compensationAmount (float, default 0.15): amount already compensated by potentiostat
+        compensationAmount (float, default 0.15): amount not compensated by potentiostat
 
     Returns:
         pd.DataFrame: dataframe of CA data
@@ -407,7 +407,7 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
         irange (str): irange of measurement; '2A', '1A', '100mA', '10mA' are acceptable
         stretch (float, optional): For 1 Hz, typically 4, for 10 Hz, typically 2. Defaults to 1.
         solutionResistance (float, default None): resistance to compensate for in Ohms. will try to find default using pH if not specified
-        compensationAmount (float, default 1): amount of uncompensated resistance
+        compensationAmount (float, default 1): amount not compensated by potentiostat
 
     Returns:
         pd.DataFrame: dataframe containing oscilloscope values
@@ -748,8 +748,8 @@ def buildTechniqueList(folder_path: str, techniqueName: str):
             with open(file_path, 'r', encoding='windows-1252') as file:
                 # Check technique on fourth line
                 lines = file.readlines(10000)
-                print('hi')
-                print(len(lines))
+                #print('hi')
+                #print(len(lines))
                 if len(lines) >= 4:
                     fourth_line = lines[3]
                     secondLine = lines[1]
@@ -794,5 +794,10 @@ def buildTechniqueList(folder_path: str, techniqueName: str):
     
     # Extract just the file paths from the sorted list
     matching_files = [info[0] for info in file_info]
+    
+    #prints matching_files
+    for file in matching_files:
+        print(file)
+        print('\n')
     
     return matching_files
