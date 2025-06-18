@@ -30,7 +30,7 @@ def plotOneCV(data: pd.DataFrame, title: str):
     plt.show()
     return (fig, ax)
     
-def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] = None, cycleList: list[int] = None, horizontalLine: bool = False, verticalLine: bool = False, xlim: list[float] = None, ylim: list[float] = None, currentdensity: bool = True):
+def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] = None, cycleList: list[int] = None, horizontalLine: bool = True, verticalLine: bool = True, xlim: list[float] = None, ylim: list[float] = None, currentdensity: bool = True):
     """Plots one cycle (default last) of many CVs.
 
     Args:
@@ -230,7 +230,7 @@ def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False):
         
         #plots ECSA CVs
         legendList = ['{:3.0f} '.format(j*1000) + r'$\frac{mV}{s}$' for j in scanRateList]
-        plotManyCVs(dataList,title+' EDLC CVs',legendList=legendList,horizontalLine=True,currentdensity=False)
+        plotManyCVs(dataList,title+' EDLC CVs',legendList=legendList,horizontalLine=True,currentdensity=False,verticalLine=False)
         
         #performs linear regression and plots
         result = linregress(scanRateList,currentList)

@@ -152,7 +152,7 @@ def plotH2CA(h2List,electronList,title,labels=None):
     """Plots integrated CA charge and H2 generated.
 
     Args:
-        h2List (list[tuple[float,float]]): Dictionary from readExcelSheet. Must match order of electronList
+        h2List (list[tuple[float,float]]): Dictionary from readExcelSheet formatted into a list. Must match order of electronList
         electronList (list[tuple[float,float]]): Dictionary from integrateCA. Must match order of h2Dict.
         title (str): Graph title.
         labels (list[str]): X-axis labels for experiments. Default None.
