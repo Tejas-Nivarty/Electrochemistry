@@ -796,8 +796,8 @@ def buildTechniqueList(folder_path: str, techniqueName: str):
     matching_files = [info[0] for info in file_info]
     
     #prints matching_files
-    for file in matching_files:
-        print(file)
+    for i, file in enumerate(matching_files):
+        print(str(i)+' '+file)
         print('\n')
     
     return matching_files
