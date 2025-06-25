@@ -153,8 +153,11 @@ def buildEDLCList(folderName: str, number: int, pH: float, area: float, referenc
     
     if excludeLastX != 0:        
         edlcFiles = edlcFiles[excludeLastX:]
+        
+    base_mpt = {f[:-4] for f in edlcFiles if f.endswith('.mpt')}
+    cleaned_list = [f for f in edlcFiles if not (f.endswith('.txt') and f[:-4] in base_mpt)]
 
-    return buildCVList(edlcFiles,pH,area,referencePotential)
+    return buildCVList(cleaned_list,pH,area,referencePotential)
 
 def readCA(filename: str, pH: float, area: float, referencePotential: float, shouldRemoveNoise: bool = False, compensationAmount: float = 0.15): #area is in cm^2
     """Reads chronoamperometry data from Biologic into pandas dataframe.
