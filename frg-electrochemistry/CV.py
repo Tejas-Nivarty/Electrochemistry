@@ -38,8 +38,8 @@ def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] 
         title (str): Title of plot.
         legendList (list[str], optional): List of legend items. Defaults to None.
         cycleList (list[int], optional): List of specific cycles to plot. Defaults to None.
-        horizontalLine (bool, optional): Plots line through current = 0. Defaults to False.
-        verticalLine (bool, optional): Plots line through V_RHE = 0. Defaults to False.
+        horizontalLine (bool, optional): Plots line through current = 0. Defaults to True.
+        verticalLine (bool, optional): Plots line through V_RHE = 0. Defaults to True.
         xlim (list[float], optional): limits of x-axis. Defaults to None.
         ylim (list[float], optional): limits of y-axis. Defaults to None.
         currentdensity (bool, optional): If false, uses raw current. Defaults to True.
@@ -114,13 +114,14 @@ def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] 
     plt.show()
     return (fig, ax)
 
-def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False):
+def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False, show = True):
     """Takes list of DataFrames from buildEDLCList and finds ECSA.
 
     Args:
         dataList (list[pd.Dataframe]): CV DataFrames
         title (str): title of graph + EDLC
         trasatti (bool): set to False, implements Trasatti's method, unfinished
+        show (bool): set to True, whether to plot graphs or not
 
     Returns:
         tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
@@ -230,7 +231,8 @@ def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False):
         
         #plots ECSA CVs
         legendList = ['{:3.0f} '.format(j*1000) + r'$\frac{mV}{s}$' for j in scanRateList]
-        plotManyCVs(dataList,title+' EDLC CVs',legendList=legendList,horizontalLine=True,currentdensity=False,verticalLine=False)
+        if show:
+            plotManyCVs(dataList,title+' EDLC CVs',legendList=legendList,horizontalLine=True,currentdensity=False,verticalLine=False)
         
         #performs linear regression and plots
         result = linregress(scanRateList,currentList)
@@ -245,7 +247,8 @@ def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False):
             ylabel = 'Current (A)',
             xlim = [0,ax.get_xlim()[1]],
             ylim = [0,ax.get_ylim()[1]])
-        plt.show()
+        if show:
+            plt.show()
         
     else: #incomplete for now
         xList = []
@@ -265,4 +268,4 @@ def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False):
         k1 = result.slope
         k2 = result.intercept
     
-    return (fig, ax)
+    return result.slope*1e6
