@@ -320,7 +320,7 @@ def plotManyECSAs(
 
         # plotting
         c = colorFader('blue','red',idx,totalNumber)
-        ax.plot(scanRateList, currentList, "o", color=c, label='_')
+        ax.plot(scanRateList, currentList, "o", color=c, label=f"{label} ({slope_uF:.2f} µF)")
         
         ylims = ax.get_ylim()
         xlims = ax.get_xlim()
@@ -331,7 +331,7 @@ def plotManyECSAs(
         c = colorFader('blue','red',idx,totalNumber)
         ax.plot(x_line,
                 linregressList[idx].slope * x_line + linregressList[idx].intercept,
-                "-", color=c, label=f"{label} ({slope_uF:.2f} µF)")
+                "-", color=c, label='_')
         ax.set(ylim = ylims,
                xlim = xlims)
 

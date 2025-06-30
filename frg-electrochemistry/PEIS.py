@@ -111,7 +111,7 @@ def plotManyNyquists(eisDatas: list[pd.DataFrame], title: str, fitModel: bool = 
         else:
             #finds potential at which EIS was taken
             potential = eisDatas[i]['<Ewe>/V'].mean()*1000
-            ax.plot(Z.real,-Z.imag,'o',color=color,label='{:3.0f}'.format(potential)+r' $mV_{ref}$')
+            ax.plot(Z.real,-Z.imag,'o--',color=color,label='{:3.0f}'.format(potential)+r' $mV_{ref}$')
         if fitModel:
             ax.plot(zPredict.real,-zPredict.imag,color=color,linestyle='-',label='_')
     
