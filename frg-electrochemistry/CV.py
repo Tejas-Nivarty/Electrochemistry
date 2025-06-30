@@ -268,4 +268,97 @@ def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False, s
         k1 = result.slope
         k2 = result.intercept
     
-    return result.slope*1e6
+    if not show:
+        plt.close(fig)
+    
+    return (scanRateList,currentList,result)
+
+def plotManyECSAs(
+        dataSets: list[list[pd.DataFrame]],
+        title: str = "",
+        labels: list[str] | None = None
+    ):
+    """
+    Overlay multiple ECSA-vs-scan-rate regressions in one figure.
+
+    Parameters
+    ----------
+    dataSets : list[list[pd.DataFrame]]
+        Outer list = one sample / condition.
+        Inner list = the CV DataFrames for that sample (exactly what plotECSA expects).
+    title : str
+        Figure title (gets "EDLC Plot" appended automatically).
+    labels : list[str] | None
+        Legend labels, one per dataset. Defaults to «Sample 0», «Sample 1», …
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    ax  : matplotlib.axes.Axes
+    """
+    if labels is None:
+        labels = [f"EDLC {i}" for i in range(len(dataSets))]
+    if len(labels) != len(dataSets):
+        raise ValueError("labels and dataSets must be the same length")
+
+    fig, ax = plt.subplots()
+    slopes_uF = []
+    linregressList = []
+    
+    totalNumber = len(dataSets)
+
+    for idx, (dataList, label) in enumerate(zip(dataSets, labels)):
+        scanRateList, currentList, linregress = plotECSA(dataList,'',show=False)
+
+        if not currentList or not scanRateList:
+            continue  # empty dataset → skip
+
+        linregressList.append(linregress)
+        # linear regression
+        slope_uF = linregress.slope * 1e6  # convert to µF
+        slopes_uF.append(slope_uF)
+
+        # plotting
+        c = colorFader('blue','red',idx,totalNumber)
+        ax.plot(scanRateList, currentList, "o", color=c, label='_')
+        
+        ylims = ax.get_ylim()
+        xlims = ax.get_xlim()
+        
+    for idx, (dataList, label) in enumerate(zip(dataSets,labels)):
+        
+        x_line = np.linspace(0, xlims[1], 3)
+        c = colorFader('blue','red',idx,totalNumber)
+        ax.plot(x_line,
+                linregressList[idx].slope * x_line + linregressList[idx].intercept,
+                "-", color=c, label=f"{label} ({slope_uF:.2f} µF)")
+        ax.set(ylim = ylims,
+               xlim = xlims)
+
+    ax.set(
+        title=f"{title} EDLC Plot" if title else "EDLC Plot",
+        xlabel="Scan Rate (V/s)",
+        ylabel="Current (A)",
+        xlim=(0, ax.get_xlim()[1]),
+        ylim=(0, ax.get_ylim()[1]),
+    )
+    ax.legend(fontsize=8)
+
+    plt.show()
+    
+    
+    fig, ax = plt.subplots()
+    xLabels = np.arange(1,len(slopes_uF)+1,1)
+    yLabels = slopes_uF
+    ax.plot(xLabels,yLabels,
+            color='k',
+            linestyle='--',
+            marker='o')
+    
+    ax.set(title=title,
+           xlabel='Experiment Number',
+           ylabel='ECSA ($\mu$F)')
+    
+    plt.show()
+
+    return (fig, ax)

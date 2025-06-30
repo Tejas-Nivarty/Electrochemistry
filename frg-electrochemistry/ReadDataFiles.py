@@ -804,3 +804,37 @@ def buildTechniqueList(folder_path: str, techniqueName: str):
         print('\n')
     
     return matching_files
+
+def split_by_known_prefixes(file_paths, known_prefixes):
+  """
+  Split a list of file paths based on known filename prefixes.
+  
+  Args:
+      file_paths (list): List of full file paths
+      known_prefixes (list): List of known prefixes to check for
+      
+  Returns:
+      dict: Dictionary where keys are prefixes and values are lists of full file paths,
+            with an additional "unmatched" key for files that don't match any prefix
+  """
+  # Initialize the result dictionary with empty lists for each prefix
+  result = {prefix: [] for prefix in known_prefixes}
+  result["unmatched"] = []  # Add the unmatched category
+  
+  for path in file_paths:
+      # Extract just the filename
+      filename = os.path.basename(path)
+      
+      # Check which known prefix this filename starts with
+      matched = False
+      for prefix in known_prefixes:
+          if filename.startswith(prefix):
+              result[prefix].append(path)
+              matched = True
+              break
+      
+      # If no prefix matched, add to the unmatched list
+      if not matched:
+          result["unmatched"].append(path)
+  
+  return result
