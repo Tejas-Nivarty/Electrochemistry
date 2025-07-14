@@ -22,7 +22,7 @@ def readCV(filename: str, pH: float, area: float, referencePotential: float, com
     if filename[-3:] == 'mpt':
         
         #finds number of header lines and whether it's one of pedram's files
-        with open(filename, 'r') as file:
+        with open(filename, 'r', encoding='windows-1252') as file:
             file.readline()
             line = file.readline()
             numHeaderLines = int(re.findall(r'-?\d*\.?\d+', line)[0])
