@@ -16,6 +16,7 @@ import datashader.transfer_functions as tf
 InteractiveImage = None
 from colorcet import fire
 import holoviews as hv
+hv.extension('bokeh') 
 from holoviews.operation.datashader import datashade, shade
 
 def fft(data: pd.DataFrame,dataLabel: str,timeLabel: str):
@@ -141,13 +142,14 @@ def analyzeWaveform(pulse: pd.DataFrame, experimentLength: float, frequency: flo
 
     return
 
-def plotWaveformMPL(pulse: pd.DataFrame, title: str, jv: bool, reference: pd.DataFrame = pd.DataFrame()):
+def plotWaveformMPL(pulse: pd.DataFrame, title: str, jv: bool, currentDensity: bool = False, reference: pd.DataFrame = pd.DataFrame()):
     """Uses matplotlib to plot waveform. Slow for low frequency, large waveforms.
 
     Args:
         pulse (pd.DataFrame): Waveform from readOSC.
         title (str): Title of plot.
         jv (bool): If true, plots jv curve.
+        currentDensity (bool): If true, uses current density rather than raw current
         reference (pd.DataFrame, optional): Reference from readRawWaveform. Defaults to empty pd.DataFrame().
 
     Returns:
@@ -155,15 +157,17 @@ def plotWaveformMPL(pulse: pd.DataFrame, title: str, jv: bool, reference: pd.Dat
     """
     fig, ax = plt.subplots()
     ax2 = ax.twinx()
-    
-    #ax.plot(pulse['Time (s)']*1000,pulse['Current Density (mA/cm^2)'],color='r')
-    ax.plot(pulse['Time (s)']*1000,pulse['Current (A)'],color='r')
+    if currentDensity:
+        ax.plot(pulse['Time (s)']*1000,pulse['Current Density (mA/cm^2)'],color='r')
+        ylabel = r'Current Density $(\frac{mA}{cm^2_{geo}})$'
+    else:
+        ax.plot(pulse['Time (s)']*1000,pulse['Current (A)'],color='r')
+        ylabel=r'Current (A)'
     ax2.plot(pulse['Time (s)']*1000,pulse['Voltage (V)'],color='k')
     if not reference.empty:
         ax2.plot(reference['Time (s)']*1000,reference['Voltage (V)'],color='k',linestyle='--')
     ax.set(title= title,
-           #ylabel=r'Current Density $(\frac{mA}{cm^2_{geo}})$',
-           ylabel=r'Current (A)',
+           ylabel=ylabel,
            xlabel='Time (ms)')
     ax2.set(ylabel = r'Voltage (V$_{RHE}$)')
     ax.axhline(0,color='k',zorder=0)
@@ -556,11 +560,7 @@ def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv:
     """
     # Create color palette
     if customColors is None:
-        if len(pulses) <= 11:
-            colors = Spectral11[:len(pulses)]
-        else:
-            # Generate colors using colorFader for more than 11 datasets
-            colors = [colorFader('blue', 'red', i, len(pulses)) for i in range(len(pulses))]
+        colors = [colorFader('blue', 'red', i, len(pulses)) for i in range(len(pulses))]
     else:
         colors = customColors
     
@@ -659,7 +659,7 @@ def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv:
             
             # Convert to Bokeh
             p2 = hv.render(color_points.opts(
-                width=800, height=400,
+                frame_width=800, frame_height=400,
                 title=f"{title} - Current-Voltage Relationship",
                 xlabel='Voltage (VRHE)',
                 ylabel='Current Density (mA/cm²geo)',
@@ -675,7 +675,7 @@ def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv:
             
             # Convert to Bokeh
             p3 = hv.render(color_charge_points.opts(
-                width=800, height=400,
+                frame_width=800, frame_height=400,
                 title=f"{title} - Charge-Voltage Relationship",
                 xlabel='Voltage (VRHE)',
                 ylabel='Charge Density (mC/cm²geo)',
@@ -752,12 +752,58 @@ def plotWaveforms(pulses: list[pd.DataFrame], title: str, legend: list[str], jv:
     
     return p1
 
-def getEISFromWaveform(pulse: pd.DataFrame):
+def getEISFromWaveform(pulse: pd.DataFrame, freqRange: list[float] = None):
     """Experimental, unfinished function to get EIS from waveform by taking fft and doing Z = V/I
 
     Args:
-        pulse (pd.DataFrame): _description_
+        pulse (pd.DataFrame): Waveform from readOSC.py
+        freqRange (list[float], default None): Constrains output to certain frequencies.
+        
+    Returns:
+        impedance (pd.DataFrame): impedance in same format as output of ReadDataFiles.readPEIS()
     """
+    
+    t = pulse['Time (s)'].to_numpy()
+    i = pulse['Current (A)'].to_numpy()
+    v = pulse['Voltage (V)'].to_numpy()
+    
+    # i = i - np.median(i)
+    # v = v - np.median(v)
+    dt = np.median(np.diff(t))
+    
+    #no windowing necessary as this is a repeating function. at different freq's this may not be the case
+    
+    v_fft = sc.fft.rfft(v)
+    i_fft = sc.fft.rfft(i)
+    freqs = sc.fft.rfftfreq(len(v),dt)
+    
+    with np.errstate(divide='ignore', invalid='ignore'):
+        z_fft = v_fft / i_fft
+        z_fft[~np.isfinite(z_fft)] = np.nan     # NaN out 0/0 and V/0 bins
+    
+    impedance = pd.DataFrame()
+    impedance['freq/Hz'] = freqs
+    impedance['Re(Z)/Ohm'] = z_fft.real
+    impedance['-Im(Z)/Ohm'] = -z_fft.imag
+    
+    if freqRange != None:
+        impedance = impedance[(impedance['freq/Hz'] >= freqRange[0]) & (impedance['freq/Hz'] <= freqRange[1])]
+
+    
+    
+    return impedance
+
+def predictWaveform(pulse: pd.DataFrame, eisData: pd.DataFrame):
+    """Using EIS data and a voltage waveform, predicts the resulting current waveform.
+
+    Args:
+        pulse (pd.DataFrame): Voltage waveform from ReadDataFiles.readRawWaveform()
+        eisData (pd.DataFrame): EIS data from ReadDataFiles.readPEIS()
+        
+    Returns:
+        pulse (pd.DataFrame): In the style of ReadDataFiles.readOSC()
+    """
+    
     return
 
 #if you would like to use CLI to analyze a waveform can do it

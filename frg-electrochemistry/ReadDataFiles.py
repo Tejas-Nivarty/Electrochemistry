@@ -336,8 +336,6 @@ def readPEIS(filename: str, freqRange: list[float] = None):
                         dtype = np.float64,
                         encoding='unicode_escape')
         
-        
-        
     #cleans data to remove points where Synology interferes with saving data
     data = data[~((data['time/s'] == 0) & (data['<I>/mA'] == 0))]
     
@@ -416,9 +414,11 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
         pd.DataFrame: dataframe containing oscilloscope values
     """
     with open(filename,'r') as file:
-        lines = file.readlines()
-        firstChannel = lines[0][33]
-        unitsList = lines[1].split(',')
+        line1 = next(file)
+        line2 = next(file)
+        line3 = next(file)
+        firstChannel = line1[33]
+        unitsList = line2.split(',')
         unitsList = [i.replace('(','').replace(')','') for i in unitsList]
         timeUnit = unitsList[0]
         voltage1Unit = unitsList[3]
@@ -428,10 +428,10 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
     
     data = pd.read_csv(filename,
                        skiprows=3,
+                       engine='pyarrow',
                        sep=',',
                        names=names,
-                       index_col=False,
-                       dtype=float)
+                       dtype=np.float32)
     
     #ensures correct units
     if voltage1Unit == 'mV':
