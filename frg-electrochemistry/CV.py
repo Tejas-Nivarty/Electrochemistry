@@ -5,12 +5,13 @@ import matplotlib.pyplot as plt
 from scipy.stats import linregress
 from ReadDataFiles import colorFader
 
-def plotOneCV(data: pd.DataFrame, title: str):
+def plotOneCV(data: pd.DataFrame, title: str, legendDisplay: bool = True):
     """Plots every cycle of one CV scan.
 
     Args:
         data (pd.DataFrame): DataFrame from readCV.
         title (str): Title of plot.
+        legendDisplay (bool, True): Whether to display legend, default True.
 
     Returns:
         tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
@@ -20,9 +21,16 @@ def plotOneCV(data: pd.DataFrame, title: str):
     ax.axhline(0,color='k')
     ax.axvline(0,color='k')
     for i in range(1,numCycles+1):
+        initialOrFinal = False
+        if i == 1 or i == numCycles:
+            legendAddition = ''
+        elif numCycles > 10:
+            legendAddition = '_'
+        else:
+            legendAddition = ''
         color = colorFader('green','blue',i-1,numCycles)
         dataSlice = data[data['cycle number'] == i]
-        ax.plot(dataSlice['Ewe/V'],dataSlice['j/mA*cm-2'],color = color,label = 'Cycle '+str(i))
+        ax.plot(dataSlice['Ewe/V'],dataSlice['j/mA*cm-2'],color = color,label = legendAddition+'Cycle '+str(i))
     ax.set(title = title,
            xlabel = r'$V_{RHE}$',
            ylabel = r'j $(\frac{mA}{cm^2_{geo}})$')
@@ -343,8 +351,8 @@ def plotManyECSAs(
         ylim=(0, ax.get_ylim()[1]),
     )
     ax.legend(fontsize=8)
-
-    plt.show()
+    
+    #plt.show()
     
     
     fig, ax = plt.subplots()
