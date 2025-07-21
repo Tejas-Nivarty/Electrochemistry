@@ -177,7 +177,7 @@ def readCA(filename: str, pH: float, area: float, referencePotential: float, sho
     if filename[-3:] == 'mpt':
         
         #finds number of header lines
-        with open(filename, 'r') as file:
+        with open(filename, 'r', encoding='windows-1252') as file:
             file.readline()
             line = file.readline()
             numHeaderLines = int(re.findall(r'-?\d*\.?\d+', line)[0])
@@ -287,7 +287,7 @@ def readPEIS(filename: str, freqRange: list[float] = None):
     if filename[-3:] == 'mpt':
         
         #finds number of header lines
-        with open(filename, 'r') as file:
+        with open(filename, 'r', encoding='windows-1252') as file:
             file.readline()
             line = file.readline()
             numHeaderLines = int(re.findall(r'-?\d*\.?\d+', line)[0])
