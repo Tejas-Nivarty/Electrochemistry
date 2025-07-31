@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from impedance.models.circuits import CustomCircuit
 from impedance.preprocessing import cropFrequencies
-from pyDRTtools.runs import EIS_object, simple_run
+#from pyDRTtools.runs import EIS_object, simple_run
 from scipy import fft
 import scipy as sc
 
@@ -190,58 +190,58 @@ def plotOneDRT():
     """
     return
 
-def plotManyDRTs(eisDatas: list[pd.DataFrame], title: str, freqRange: list[float], legendList: list[str] = None, rbf_type='Gaussian',der_used='1st order',cv_type='GCV',reg_param=1E-4,shape_control='FWHM Coefficient',coeff=0.1):
-    """Calculates non-Bayesian DRT. May require extensive hyperparameter tuning. Use bayesDRT.py instead.
+# def plotManyDRTs(eisDatas: list[pd.DataFrame], title: str, freqRange: list[float], legendList: list[str] = None, rbf_type='Gaussian',der_used='1st order',cv_type='GCV',reg_param=1E-4,shape_control='FWHM Coefficient',coeff=0.1):
+#     """Calculates non-Bayesian DRT. May require extensive hyperparameter tuning. Use bayesDRT.py instead.
 
-    Args:
-        eisDatas (list[pd.DataFrame]): EIS data in pandas dataframe.
-        title (str): Title of plot.
-        freqRange (list[float]): [lower freq bound, upper freq bound]
-        legendList (list[str], optional): List of legend items. Defaults to None.
-        rbf_type (str, optional): See bayesdrt2 docs. Defaults to 'Gaussian'.
-        der_used (str, optional): See bayesdrt2 docs. Defaults to '1st order'.
-        cv_type (str, optional): See bayesdrt2 docs. Defaults to 'GCV'.
-        reg_param (_type_, optional): See bayesdrt2 docs. Defaults to 1E-4.
-        shape_control (str, optional): See bayesdrt2 docs. Defaults to 'FWHM Coefficient'.
-        coeff (float, optional): See bayesdrt2 docs. Defaults to 0.1.
+#     Args:
+#         eisDatas (list[pd.DataFrame]): EIS data in pandas dataframe.
+#         title (str): Title of plot.
+#         freqRange (list[float]): [lower freq bound, upper freq bound]
+#         legendList (list[str], optional): List of legend items. Defaults to None.
+#         rbf_type (str, optional): See bayesdrt2 docs. Defaults to 'Gaussian'.
+#         der_used (str, optional): See bayesdrt2 docs. Defaults to '1st order'.
+#         cv_type (str, optional): See bayesdrt2 docs. Defaults to 'GCV'.
+#         reg_param (_type_, optional): See bayesdrt2 docs. Defaults to 1E-4.
+#         shape_control (str, optional): See bayesdrt2 docs. Defaults to 'FWHM Coefficient'.
+#         coeff (float, optional): See bayesdrt2 docs. Defaults to 0.1.
 
-    Returns:
-        tuple(matplotlib.figure.Figure,matplotlib.axes._axes.Axes): fig and ax for further customization if necessary
-    """
-    numberOfPlots = len(eisDatas)
-    fig, ax = plt.subplots()
-    ax.set_title(title)
+#     Returns:
+#         tuple(matplotlib.figure.Figure,matplotlib.axes._axes.Axes): fig and ax for further customization if necessary
+#     """
+#     numberOfPlots = len(eisDatas)
+#     fig, ax = plt.subplots()
+#     ax.set_title(title)
     
-    for i in range(0,numberOfPlots):
+#     for i in range(0,numberOfPlots):
         
-        data = eisDatas[i]
-        data['Im(Z)/Ohm'] = -data['-Im(Z)/Ohm']   
-        data = data[(data['freq/Hz'] >= freqRange[0]) & (data['freq/Hz'] <= freqRange[1])] 
+#         data = eisDatas[i]
+#         data['Im(Z)/Ohm'] = -data['-Im(Z)/Ohm']   
+#         data = data[(data['freq/Hz'] >= freqRange[0]) & (data['freq/Hz'] <= freqRange[1])] 
         
-        data = EIS_object(data['freq/Hz'].to_numpy(),
-                        data['Re(Z)/Ohm'].to_numpy(),
-                        data['Im(Z)/Ohm'].to_numpy())
-        data = simple_run(data,
-                        rbf_type=rbf_type,
-                        data_used='Combined Re-Im Data',
-                        induct_used=0,
-                        der_used=der_used,
-                        cv_type=cv_type,
-                        reg_param= reg_param, #1E-4 is good
-                        shape_control=shape_control,
-                        coeff=coeff) #0.3 is good
-        color = colorFader('blue','red',i,numberOfPlots)
-        ax.plot(data.out_tau_vec, data.gamma,color=color)
+#         data = EIS_object(data['freq/Hz'].to_numpy(),
+#                         data['Re(Z)/Ohm'].to_numpy(),
+#                         data['Im(Z)/Ohm'].to_numpy())
+#         data = simple_run(data,
+#                         rbf_type=rbf_type,
+#                         data_used='Combined Re-Im Data',
+#                         induct_used=0,
+#                         der_used=der_used,
+#                         cv_type=cv_type,
+#                         reg_param= reg_param, #1E-4 is good
+#                         shape_control=shape_control,
+#                         coeff=coeff) #0.3 is good
+#         color = colorFader('blue','red',i,numberOfPlots)
+#         ax.plot(data.out_tau_vec, data.gamma,color=color)
     
-    ax.set(ylabel = r'$\gamma$ ($\Omega$)',
-           xlabel = r'RC Time Constant (s)',
-           xscale='log')
-    if legendList != None:
-        ax.legend(legendList)
+#     ax.set(ylabel = r'$\gamma$ ($\Omega$)',
+#            xlabel = r'RC Time Constant (s)',
+#            xscale='log')
+#     if legendList != None:
+#         ax.legend(legendList)
         
-    plt.show()
+#     plt.show()
     
-    return (fig, ax)
+#     return (fig, ax)
 
 def generateCircuitFit(f: np.ndarray[float], Z: np.ndarray[complex], circuitString: str, initialGuess: list[float]):
     """Takes in data from convertToImpedanceAnalysis and fits it to a specific circuit.

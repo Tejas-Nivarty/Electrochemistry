@@ -80,7 +80,7 @@ def getDRT(eisData: pd.DataFrame):
         
     return (fig, axes)
 
-def plotManyDRTs(eisDatas: list[pd.DataFrame], title: str, legendList: list[str] = None, logResistance = False):
+def plotManyDRTs(eisDatas: list[pd.DataFrame], title: str, legendList: list[str] = None, logResistance = False, regenerate = False):
     """Plots many DRTs.
 
     Args:
@@ -88,6 +88,7 @@ def plotManyDRTs(eisDatas: list[pd.DataFrame], title: str, legendList: list[str]
         title (str): Title of DRT plot.
         legendList (list[str], optional): List of legend elements. Defaults to potential that EIS was taken at.
         logResistance (bool, optional): Plots resistance in log format for better visualizing series.
+        regenerate (bool, default False): if true, will regenerate DRTs instead of using cached versions. if no cached version, will just use default
 
     Returns:
         tuple(matplotlib.figure.Figure,matplotlib.axes._axes.Axes): fig and ax for further customization if necessary
