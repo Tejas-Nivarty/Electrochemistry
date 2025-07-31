@@ -343,6 +343,8 @@ def readPEIS(filename: str, freqRange: list[float] = None):
     if freqRange != None:
         data = data[(data['freq/Hz'] >= freqRange[0]) & (data['freq/Hz'] <= freqRange[1])]
         
+    data.attrs['filename'] = filename
+        
     return data
 
 def buildPEISList(filenameList: list[str], freqRange: list[float] = None):
