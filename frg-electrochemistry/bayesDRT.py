@@ -366,7 +366,7 @@ def plotManyDRTs(eisDatas: list[pd.DataFrame],
            xscale='log')
 
     if logResistance:
-        ax.set_yscale('symlog', linthresh=1)
+        ax.set_yscale('symlog', linthresh=0.1)
         ax.set_ylim([0, ax.get_ylim()[1]])
 
     plt.show()
