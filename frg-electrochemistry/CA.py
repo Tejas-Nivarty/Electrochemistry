@@ -20,7 +20,7 @@ def getTafel(caList: list[pd.DataFrame]):
     logCurrentDensityList = []
     
     for data in caList:
-        exclusionPercent = 0.8 #percent of time in the beginning to exclude. works for Tafels of all sizes
+        exclusionPercent = 0.2 #percent of time in the beginning to exclude. works for Tafels of all sizes
         totalTime = data['time/s'].iloc[-1] - data['time/s'].iloc[0]
         timeToExclude = totalTime*exclusionPercent
         dataSlice = data[data['time/s'] > (data['time/s'].iloc[0] + timeToExclude)]
@@ -60,8 +60,8 @@ def plotTafel(tafelList: list[tuple], legendList: list[str], title: str, colors:
             color = colors[i]
         tafelSlope = linearRegression.slope
         exchangeCurrentDensity = 10**(-linearRegression.intercept/linearRegression.slope)
-        tafelSlopeString = ', A = {:.3e} '.format(tafelSlope) + r'$\frac{mV}{dec}$'
-        exchangeCurrentDensityString = r', $j_0$ =' + '{:.3e} '.format(exchangeCurrentDensity) + r'$\frac{mA}{cm^2_{geo}}$'
+        tafelSlopeString = ', A = {:.0f} '.format(tafelSlope) + r'$\frac{mV}{dec}$'
+        exchangeCurrentDensityString = r', $j_0$ =' + '{:.3e} '.format(exchangeCurrentDensity) + r'$\frac{mA}{cm^2}$'
         
         ax.plot(logCurrentDensityList,
                 overpotentialList,
