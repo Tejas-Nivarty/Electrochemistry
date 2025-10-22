@@ -319,7 +319,7 @@ if __name__ == '__main__':
     parser.add_argument('--up', help='Up FE poling bias in volts')
     parser.add_argument('--dn', help='Down FE poling bias in volts')
     parser.add_argument('--faradaic', help='Faradaic bias in volts')
-    parser.add_argument('--pund',help='If true, creates PUND waveform instead of H2 gen waveform.', default=False)
+    parser.add_argument('--pund',help='If True, creates PUND waveform instead of H2 gen waveform.', default=False)
     args = parser.parse_args()
     if args.pund:
         print(makePUND(decimal.Decimal(args.pw),decimal.Decimal(args.freq),float(args.faradaic),float(args.up),float(args.dn),False))
