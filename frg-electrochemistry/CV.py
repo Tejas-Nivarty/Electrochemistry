@@ -38,7 +38,7 @@ def plotOneCV(data: pd.DataFrame, title: str, legendDisplay: bool = True):
     plt.show()
     return (fig, ax)
     
-def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] = None, cycleList: list[int] = None, horizontalLine: bool = True, verticalLine: bool = True, xlim: list[float] = None, ylim: list[float] = None, currentdensity: bool = True):
+def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] = None, cycleList: list[int] = None, horizontalLine: bool = True, verticalLine: bool = True, xlim: list[float] = None, ylim: list[float] = None, currentdensity: bool = True, customColors: list[str] = None):
     """Plots one cycle (default last) of many CVs.
 
     Args:
@@ -51,6 +51,7 @@ def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] 
         xlim (list[float], optional): limits of x-axis. Defaults to None.
         ylim (list[float], optional): limits of y-axis. Defaults to None.
         currentdensity (bool, optional): If false, uses raw current. Defaults to True.
+        customColors(list[str], optional): list of custom colors to use
 
     Returns:
         tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
@@ -68,7 +69,11 @@ def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] 
     for i in range(numFiles):
         
         data = dataList[i]
-        color = colorFader('blue','red',i,numFiles)
+        
+        if customColors == None:
+            color = colorFader('blue','red',i,numFiles)
+        else:
+            color = customColors[i]
         
         try:
             numCycles = int(data['cycle number'].max())
