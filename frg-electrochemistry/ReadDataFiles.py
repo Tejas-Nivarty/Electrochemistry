@@ -434,7 +434,8 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
                        sep=',',
                        names=names,
                        na_values=['∞'],
-                       dtype=np.float32)
+                       dtype=np.float32,
+                       on_bad_lines='skip')
     
     data = data.ffill() #gets rid of na values
     
