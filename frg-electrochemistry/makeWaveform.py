@@ -311,7 +311,7 @@ def makePUND(pulseWidth: decimal.Decimal, frequency: decimal.Decimal, Vmid: floa
                 file.write('{},{:-.6f}\n'.format(i,Vmid))
             
     return filename+' generated.'
-    
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--freq', help='Frequency in Hz')

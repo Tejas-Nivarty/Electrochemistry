@@ -399,7 +399,7 @@ def convertToImpedanceAnalysis(data: pd.DataFrame):
     
     return (frequency,impedance)
 
-def readOSC(filename: str,pH: float, area: float, referencePotential: float, irange: str, stretch: float = 1, solutionResistance: float = None, compensationAmount: float = 1):
+def readOSC(filename: str,pH: float, area: float, referencePotential: float, irange: str, stretch: float = 1, solutionResistance: float = 0, compensationAmount: float = 1):
     """Reads oscilloscope .csv from Picoscope.
 
     Args:
@@ -433,46 +433,35 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
                        engine='pyarrow',
                        sep=',',
                        names=names,
+                       na_values=['∞'],
                        dtype=np.float32)
     
+    data = data.ffill() #gets rid of na values
+    
     #ensures correct units
-    if voltage1Unit == 'mV':
+    if 'mV' in voltage1Unit:
         data['ch1Avg'] = data['ch1Avg'] / 1000
-    if voltage2Unit == 'mV':
+    if 'mV' in voltage2Unit:
         data['ch2Avg'] = data['ch2Avg'] / 1000
     
     #ensures time starts at 0
     data['Time (xs)'] = data['Time (xs)'] - data['Time (xs)'].loc[0]
     
     #sets proper units of time
-    if timeUnit == 'ms':
+    if 'ms' in timeUnit:
         data['Time (ms)'] = data['Time (xs)']
-    elif timeUnit == 'us':
+    elif 'us' in timeUnit:
         data['Time (ms)'] = data['Time (xs)']/1000
         
     #ensures correct labels
-    if firstChannel == 'A':
+    if 'A' in firstChannel:
         data['Voltage (V)'] = data['ch1Avg']
         data['Current (A)'] = data['ch2Avg']
     else:
         data['Voltage (V)'] = data['ch2Avg']
         data['Current (A)'] = data['ch1Avg']
-        
-    #finds and compensates resistance
-    if solutionResistance == None:
-        if pH == 13:
-            solutionResistance = 45
-        else: #pH = 14
-            solutionResistance = 5
-    data['Voltage (V)'] = data['Voltage (V)'] - (data['Current (A)']*solutionResistance*compensationAmount)
     
-    data['Time (ms)'] *= stretch
-    data = data[data['Time (ms)'] < (data['Time (ms)'].max()/stretch)]
-    data['Time (s)'] = data['Time (ms)']/1000
-    data['RawVoltage (V)'] = data['Voltage (V)']
-    data['Voltage (V)'] = data['Voltage (V)'] + referencePotential + 0.059*pH
-    
-    if irange == '1A' or irange == '2A': #unsure if this is right
+    if irange == '1A' or irange == '2A':
         data['Current (A)'] = data['Current (A)']
     elif irange == '100mA':
         data['Current (A)'] = data['Current (A)']*0.1
@@ -480,16 +469,33 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
         data['Current (A)'] = data['Current (A)']*0.01
     elif irange == '1mA':
         data['Current (A)'] = data['Current (A)']*0.001
+        
+    #compensates resistance (for some reason A seems to be much higher than V)
+    #data['Voltage (V)'] = data['Voltage (V)'] - (data['Current (A)']*solutionResistance*compensationAmount)
     
+    #does stretch if necessary
+    data['Time (ms)'] *= stretch
+    data = data[data['Time (ms)'] < (data['Time (ms)'].max()/stretch)]
+    
+    #converts to seconds
+    data['Time (s)'] = data['Time (ms)']/1000
+    
+    #does RHE correction
+    data['RawVoltage (V)'] = data['Voltage (V)']
+    data['Voltage (V)'] = data['Voltage (V)'] + referencePotential + 0.059*pH
+    
+    #gets charge and charge density
     chargeArray = sc.integrate.cumulative_trapezoid(data['Current (A)'],
                                                     x = data['Time (s)'])
     chargeArray = np.insert(chargeArray,0,0)
     data['Charge (C)'] = pd.Series(chargeArray)
     data['Charge Density (mC/cm^2)'] = data['Charge (C)']*1000/area
     
+    #gets current density
     data['Current (mA)'] = data['Current (A)']*1000
     data['Current Density (mA/cm^2)'] = data['Current (mA)']/area
     
+    #drops unnecessary columns to save memory
     data = data.drop(['discard1','discard2','Time (xs)','ch1Avg','ch2Avg'],axis=1)
 
     return data

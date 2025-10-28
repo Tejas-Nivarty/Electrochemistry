@@ -177,16 +177,16 @@ def plotWaveformMPL(pulse: pd.DataFrame, title: str, jv: bool, currentDensity: b
         fig, ax = plt.subplots()
         plt.axhline(0,color='k',zorder=0)
         plt.axvline(0,color='k',zorder=0)
-        plt.axvline(-1.965,color='k',linestyle='--',zorder=0)
-        plt.axvline(6.535,color='k',linestyle='--',zorder=0)
-        plt.axvline(-0.335,color='k',linestyle='--',zorder=0)
-        #plt.scatter(pulse['Voltage (V)'],pulse['Charge Density (mC/cm^2)'],c=(pulse['Time (s)']-pulse['Time (s)'].iloc[0])*1e6,cmap='gist_rainbow')
-        plt.scatter(pulse['Voltage (V)'],pulse['Current Density (mA/cm^2)'],c=(pulse['Time (s)']-pulse['Time (s)'].iloc[0])*1e6,cmap='gist_rainbow')
+        # plt.axvline(-1.965,color='k',linestyle='--',zorder=0)
+        # plt.axvline(6.535,color='k',linestyle='--',zorder=0)
+        # plt.axvline(-0.335,color='k',linestyle='--',zorder=0)
+        plt.scatter(pulse['Voltage (V)'],pulse['Charge Density (mC/cm^2)'],c=(pulse['Time (s)']-pulse['Time (s)'].iloc[0])*1e6,cmap='gist_rainbow')
+        #plt.scatter(pulse['Voltage (V)'],pulse['Current Density (mA/cm^2)'],c=(pulse['Time (s)']-pulse['Time (s)'].iloc[0])*1e6,cmap='gist_rainbow')
         plt.colorbar(label=r'Time ($\mu$s)')
         plt.title(title)
         plt.xlabel(r'Voltage (V$_{RHE}$)')
-        #plt.ylabel(r'Charge Density $(\frac{mC}{cm^2_{geo}})$')
-        plt.ylabel(r'Current Density $(\frac{mA}{cm^2_{geo}})$')
+        plt.ylabel(r'Charge Density $(\frac{mC}{cm^2_{geo}})$')
+        #plt.ylabel(r'Current Density $(\frac{mA}{cm^2_{geo}})$')
         plt.show()
     
     return (fig, ax)
@@ -805,6 +805,146 @@ def predictWaveform(pulse: pd.DataFrame, eisData: pd.DataFrame):
     """
     
     return
+
+def getPUND(df):
+    """
+
+    Args:
+        df (pd.DataFrame): Full PUND dataframe from ReadDataFiles.readOSC()
+
+    Returns:
+        P, N (pd.Dataframe): up and down polarization dataframes. stored in 'Switching Polarization (uC/cm^2)' column
+    """
+    # Make a copy to avoid modifying original
+    df = df.copy()
+    
+    # Calculate how many rows we need to add to make it divisible by 4
+    n = len(df)
+    remainder = n % 4
+    
+    if remainder != 0:
+        rows_to_add = 4 - remainder
+        import pandas as pd
+        # Method 1: Repeat the last row instead of creating NaN rows
+        last_row = df.iloc[[-1]]  # Get last row as DataFrame
+        padding = pd.concat([last_row] * rows_to_add, ignore_index=True)
+        df = pd.concat([df, padding], ignore_index=True)
+    
+    
+    # Now split into 4 equal parts using np.array_split (will work now)
+    # or continue with iloc method
+    chunk_size = len(df) // 4
+    
+    P = df.iloc[0:chunk_size].copy()
+    U = df.iloc[chunk_size:2*chunk_size].copy()
+    N = df.iloc[2*chunk_size:3*chunk_size].copy()
+    D = df.iloc[3*chunk_size:].copy()
+    
+    #resets time and indices (s is not implemented, not necessary)
+    P['Time (ms)'] = P['Time (ms)'] - P['Time (ms)'].iloc[0]
+    U['Time (ms)'] = U['Time (ms)'] - U['Time (ms)'].iloc[0]
+    N['Time (ms)'] = N['Time (ms)'] - N['Time (ms)'].iloc[0]
+    D['Time (ms)'] = D['Time (ms)'] - D['Time (ms)'].iloc[0]
+
+    P = P.reset_index(drop=True)
+    U = U.reset_index(drop=True)
+    N = N.reset_index(drop=True)
+    D = D.reset_index(drop=True)
+    
+    #calculates switching current density of P and N pulses
+    P['Switching Current Density (mA/cm^2)'] = P['Current Density (mA/cm^2)']-U['Current Density (mA/cm^2)']
+    N['Switching Current Density (mA/cm^2)'] = N['Current Density (mA/cm^2)']-D['Current Density (mA/cm^2)']
+    
+    #get rid of this in final code, should be already imported
+    from scipy.integrate import cumulative_trapezoid
+    
+    #integrates switching current to get switching polarization (integrated cumulatively so it can be plotted, but total integral should be the one)
+    P['Switching Polarization (uC/cm^2)'] = cumulative_trapezoid(P['Switching Current Density (mA/cm^2)'],
+                                                                 P['Time (ms)'],
+                                                                 initial=0)
+    N['Switching Polarization (uC/cm^2)'] = cumulative_trapezoid(N['Switching Current Density (mA/cm^2)'],
+                                                                 N['Time (ms)'],
+                                                                 initial=0)
+    
+    return (P, N)
+
+def plotOnePUND(dfs: list[pd.DataFrame], title: str, positiveCurrent: bool = True):
+    """Plots one PUND to debug.
+
+    Args:
+        dfs (list[pd.DataFrame]): List of P and N dataframes with FE switching polarization columns from getPUND
+        title (str): Title of the plot.
+        positiveCurrent (bool, optional): Whether current of N is positive or negative. Defaults to True.
+
+    Returns:
+        (fig, ax): matplotlib figure and axes
+    """
+    #unpacks output of getPUND
+    P, N = dfs
+    
+    #plots figure
+    fig, ax = plt.subplots()
+    ax.plot(P['Time (ms)'],P['Switching Polarization (uC/cm^2)'],color='red',label='P-U')
+    
+    if positiveCurrent:
+        ax.plot(N['Time (ms)'],N['Switching Polarization (uC/cm^2)'],color='k',label='N-D')
+    else:
+        ax.plot(N['Time (ms)'],-N['Switching Polarization (uC/cm^2)'],color='k',label='-(N-D)')
+    ax.set(ylabel=r'FE Switching Polarization $\left(\frac{\mu C}{cm^2_{geo}}\right)$',
+           title=title,
+           xlabel='Time From Beginning of Pulse (ms)')
+    ax.legend()
+    plt.show()
+    
+    return fig, ax
+
+def plotManyPUNDs(dfss: list[list[pd.DataFrame]],title,positiveCurrent=True,legendList=None,customColors=None,):
+    """Plots many PUNDs at the same time.
+
+    Args:
+        dfss (listlist[[pd.DataFrame]]): List of list of P and N dataframes with FE switching polarization columns from getPUND formatted into a list.
+        title (str): Title of the plot.
+        positiveCurrent (bool, optional): Whether current of N is positive or negative. Defaults to True.
+        legendList (list[str], optional): What to put in legend, same order as dfss. Defaults to None.
+        customColors (list[str], optional): List of custom colors to plot. Defaults to None.
+
+    Returns:
+        fig, ax: matplotlib fig and ax
+    """
+    fig, ax = plt.subplots()
+    
+    totalIndices = len(dfss)
+    
+    for i, dfs in enumerate(dfss):
+        
+        P, N = dfs
+        
+        from ReadDataFiles import colorFader
+        
+        if customColors != None:
+            color = customColors[i]
+        else:
+            color = colorFader('blue','red',i,totalIndices)
+            
+        if legendList != None:
+            legendItem = legendList[i]
+        else:
+            legendItem= '_'
+            
+        ax.plot(P['Time (ms)'],P['Switching Polarization (uC/cm^2)'],color=color,label=legendItem)
+        if positiveCurrent:
+            ax.plot(N['Time (ms)'],N['Switching Polarization (uC/cm^2)'],color=color,label='_')
+        else:
+            ax.plot(N['Time (ms)'],-N['Switching Polarization (uC/cm^2)'],color=color,label='_')
+            
+        
+    ax.set(ylabel=r'FE Switching Polarization $\left(\frac{\mu C}{cm^2_{geo}}\right)$',
+           xlabel='Time From Beginning of Pulse (ms)',
+           title=title)
+            
+    ax.legend()
+    
+    return fig, ax
 
 #if you would like to use CLI to analyze a waveform can do it
 if __name__ == '__main__':
