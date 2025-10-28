@@ -824,7 +824,6 @@ def getPUND(df):
     
     if remainder != 0:
         rows_to_add = 4 - remainder
-        import pandas as pd
         # Method 1: Repeat the last row instead of creating NaN rows
         last_row = df.iloc[[-1]]  # Get last row as DataFrame
         padding = pd.concat([last_row] * rows_to_add, ignore_index=True)
@@ -856,13 +855,12 @@ def getPUND(df):
     N['Switching Current Density (mA/cm^2)'] = N['Current Density (mA/cm^2)']-D['Current Density (mA/cm^2)']
     
     #get rid of this in final code, should be already imported
-    from scipy.integrate import cumulative_trapezoid
     
     #integrates switching current to get switching polarization (integrated cumulatively so it can be plotted, but total integral should be the one)
-    P['Switching Polarization (uC/cm^2)'] = cumulative_trapezoid(P['Switching Current Density (mA/cm^2)'],
+    P['Switching Polarization (uC/cm^2)'] = sc.integrate.cumulative_trapezoid(P['Switching Current Density (mA/cm^2)'],
                                                                  P['Time (ms)'],
                                                                  initial=0)
-    N['Switching Polarization (uC/cm^2)'] = cumulative_trapezoid(N['Switching Current Density (mA/cm^2)'],
+    N['Switching Polarization (uC/cm^2)'] = sc.integrate.cumulative_trapezoid(N['Switching Current Density (mA/cm^2)'],
                                                                  N['Time (ms)'],
                                                                  initial=0)
     
@@ -918,8 +916,6 @@ def plotManyPUNDs(dfss: list[list[pd.DataFrame]],title,positiveCurrent=True,lege
     for i, dfs in enumerate(dfss):
         
         P, N = dfs
-        
-        from ReadDataFiles import colorFader
         
         if customColors != None:
             color = customColors[i]
