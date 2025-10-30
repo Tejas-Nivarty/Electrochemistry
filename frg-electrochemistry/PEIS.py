@@ -31,6 +31,7 @@ def plotOneBode(eisData: pd.DataFrame, title: str):
     ax2.tick_params(axis='y', labelcolor='r', color='r')
     ax2.spines['right'].set_color('r')
     
+    plt.tight_layout()
     plt.show()
     
     return (fig, [ax1, ax2])
@@ -63,7 +64,8 @@ def plotOneNyquist(eisData: pd.DataFrame, title: str, fitModel: bool = False, ci
            ylabel = '-Im(Z(f)) ($\Omega$)')
     if fitModel == False:
         circuit = None
-        
+    
+    plt.tight_layout()
     plt.show()
     
     return circuit
@@ -122,6 +124,7 @@ def plotManyNyquists(eisDatas: list[pd.DataFrame], title: str, fitModel: bool = 
     plt.axis('square')
     ax.legend()
     
+    plt.tight_layout()
     plt.show()
     
     return circuitList
@@ -181,6 +184,7 @@ def plotCircuitProperties(circuitList: list[CustomCircuit], legendList: list[str
         if xLabel != None:
             ax.set_xlabel(xLabel)
         
+        plt.tight_layout()
         plt.show()
     
     return datadf
@@ -265,6 +269,7 @@ def generateCircuitFit(f: np.ndarray[float], Z: np.ndarray[complex], circuitStri
     ax.plot(Z.real,-Z.imag,'ko')
     ax.plot(ZValues1.real,-ZValues1.imag,'r-')
     
+    plt.tight_layout()
     plt.show()
     
     return circuit
@@ -406,6 +411,7 @@ def getEISFromDynamicCA(filename, pH, area, referencePotential, irange, fundamen
         ax2.semilogx(freqs, -np.angle(Z, deg=True),'r')
         ax2.set_ylabel('-Phase (degrees)')
         ax2.grid(True)
+        plt.tight_layout()
         plt.show()
         
     #saves pandas dataframe

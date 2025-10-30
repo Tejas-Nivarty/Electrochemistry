@@ -35,6 +35,7 @@ def plotOneCV(data: pd.DataFrame, title: str, legendDisplay: bool = True):
            xlabel = r'$V_{RHE}$',
            ylabel = r'j $(\frac{mA}{cm^2_{geo}})$')
     ax.legend()
+    plt.tight_layout()
     plt.show()
     return (fig, ax)
     
@@ -123,7 +124,7 @@ def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] 
         ax.set(ylim=ylim)
     if xlim:
         ax.set(xlim=xlim)
-
+    plt.tight_layout()
     plt.show()
     return (fig, ax)
 
@@ -230,6 +231,7 @@ def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False, s
         
         # plt.plot(forwardSlice['time/s'],forwardSlice['control/V'],'k')
         # plt.plot(reverseSlice['time/s'],reverseSlice['control/V'],'r--')
+        # plt.tight_layout()
         # plt.show()
         
         #finds maximum oxidative and maximum reductive current
@@ -261,6 +263,7 @@ def plotECSA(dataList: list[pd.DataFrame], title: str, trasatti: bool = False, s
             xlim = [0,ax.get_xlim()[1]],
             ylim = [0,ax.get_ylim()[1]])
         if show:
+            plt.tight_layout()
             plt.show()
         
     else: #incomplete for now
@@ -357,6 +360,7 @@ def plotManyECSAs(
     )
     ax.legend(fontsize=8)
     
+    #plt.tight_layout()
     #plt.show()
     
     
@@ -372,6 +376,7 @@ def plotManyECSAs(
            xlabel='Experiment Number',
            ylabel='ECSA ($\mu$F)')
     
+    plt.tight_layout()
     plt.show()
 
     return (fig, ax)

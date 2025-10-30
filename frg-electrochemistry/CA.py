@@ -82,6 +82,7 @@ def plotTafel(tafelList: list[tuple], legendList: list[str], title: str, colors:
            ylabel = '$\eta$ (mV)',
            ylim = [0,maxLims[1]])
     ax.legend()
+    plt.tight_layout()
     plt.show()
     
     return (fig,ax)
@@ -118,7 +119,7 @@ def plotManyCAs(caDatas: list[pd.DataFrame], title: str, legendList: list[str] =
            ylabel = r'Current Density $(\frac{mA}{cm^2_{geo}})$',
            xlabel = 'Time (s)')
     ax.legend()
-    
+    plt.tight_layout()
     plt.show()
 
     return (fig, ax)
@@ -207,6 +208,7 @@ def plotH2CA(h2List,electronList,title,labels=None):
         
     ax.legend()
     
+    plt.tight_layout()
     plt.show()
     
     return (fig, ax)

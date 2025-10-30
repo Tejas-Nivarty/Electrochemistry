@@ -81,6 +81,7 @@ def plotFFTs(datasets: list[tuple], legend: list[str], title: str):
            #ylim = [10**-6,1]
            )
     ax.legend()
+    plt.tight_layout()
     plt.show()
     
     return
@@ -171,6 +172,7 @@ def plotWaveformMPL(pulse: pd.DataFrame, title: str, jv: bool, currentDensity: b
            xlabel='Time (ms)')
     ax2.set(ylabel = r'Voltage (V$_{RHE}$)')
     ax.axhline(0,color='k',zorder=0)
+    plt.tight_layout()
     plt.show()
     
     if jv == True:
@@ -187,6 +189,7 @@ def plotWaveformMPL(pulse: pd.DataFrame, title: str, jv: bool, currentDensity: b
         plt.xlabel(r'Voltage (V$_{RHE}$)')
         plt.ylabel(r'Charge Density $(\frac{mC}{cm^2_{geo}})$')
         #plt.ylabel(r'Current Density $(\frac{mA}{cm^2_{geo}})$')
+        plt.tight_layout()
         plt.show()
     
     return (fig, ax)
@@ -227,6 +230,7 @@ def plotWaveformsMPL(pulses: list[pd.DataFrame], title: str, legend: list[str], 
     ax.legend(legend)
     ax2.set(ylabel = r'Voltage (V$_{RHE}$)')
     ax.axhline(0,color='k',zorder=0)
+    plt.tight_layout()
     plt.show()
     
     if jv == True:
@@ -248,6 +252,7 @@ def plotWaveformsMPL(pulses: list[pd.DataFrame], title: str, legend: list[str], 
         ax.axvline(-1.965,color='k',linestyle='--',zorder=0)
         ax.axvline(6.535,color='k',linestyle='--',zorder=0)
         ax.axvline(-0.335,color='k',linestyle='--',zorder=0)
+        plt.tight_layout()
         plt.show()
         
         fig, ax = plt.subplots()
@@ -267,6 +272,7 @@ def plotWaveformsMPL(pulses: list[pd.DataFrame], title: str, legend: list[str], 
         ax.axvline(-1.965,color='k',linestyle='--',zorder=0)
         ax.axvline(6.535,color='k',linestyle='--',zorder=0)
         ax.axvline(-0.335,color='k',linestyle='--',zorder=0)
+        plt.tight_layout()
         plt.show()
     
     return (fig, ax)
@@ -892,6 +898,7 @@ def plotOnePUND(dfs: list[pd.DataFrame], title: str, positiveCurrent: bool = Tru
            title=title,
            xlabel='Time From Beginning of Pulse (ms)')
     ax.legend()
+    plt.tight_layout()
     plt.show()
     
     return fig, ax
