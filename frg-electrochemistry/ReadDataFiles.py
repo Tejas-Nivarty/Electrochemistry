@@ -146,7 +146,7 @@ def buildEDLCList(folderName: str, number: int, pH: float, area: float, referenc
             isEDLC = True
         if (file[-3:] != 'txt') and (file[-3:] != 'mpt'):
             isEDLC = False
-        if ('CA' in file) or ('WAIT' in file):
+        if ('CA' in file) or ('WAIT' in file) or ('OCV' in file):
             isEDLC = False
         if isEDLC:
             edlcFiles.append(folderName + '\\' + file)

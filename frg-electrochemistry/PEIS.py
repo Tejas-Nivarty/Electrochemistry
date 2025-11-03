@@ -36,6 +36,43 @@ def plotOneBode(eisData: pd.DataFrame, title: str):
     
     return (fig, [ax1, ax2])
 
+def plotManyBodes(eisDatas: pd.DataFrame, title: str, legendList: list[str] = [], customColors: list[str] = []):
+    
+    numberOfPlots = len(eisDatas)
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+    
+    for i, eisData in enumerate(eisDatas):
+        
+        if len(customColors) == 0:
+            color = colorFader('blue','red',i,numberOfPlots)
+        else:
+            color = customColors[i]
+            
+        if len(legendList) == 0:
+            potential = eisDatas[i]['<Ewe>/V'].mean()*1000
+            legendValue = '{:3.0f}'.format(potential)+r' $mV_{ref}$'
+        else:
+            legendValue = legendList[i]
+        
+        ax1.plot(eisData['freq/Hz'],eisData['|Z|/Ohm'],color=color,label='_',linestyle='dashed')
+        ax2.plot(eisData['freq/Hz'],-eisData['Phase(Z)/deg'],color=color,label=legendValue,linestyle='solid')
+        
+        continue
+    
+    ax1.set(xscale='log',
+            yscale='log',
+            title=title,
+            ylabel = 'Magnitude ($\Omega$) | Dashed',
+            xlabel = 'Frequency (Hz)')
+    ax2.set(ylabel = '-Phase (deg) | Solid')
+    plt.legend()
+    
+    plt.tight_layout()
+    plt.show()
+    
+    return
+
 def plotOneNyquist(eisData: pd.DataFrame, title: str, fitModel: bool = False, circuitString: str = None, initialGuess: list[float] = [], bounds: tuple[list[float]] = ([],[])):
     """Takes EIS data and plots Nyquist.
 

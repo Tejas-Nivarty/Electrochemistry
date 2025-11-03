@@ -903,7 +903,7 @@ def plotOnePUND(dfs: list[pd.DataFrame], title: str, positiveCurrent: bool = Tru
     
     return fig, ax
 
-def plotManyPUNDs(dfss: list[list[pd.DataFrame]],title,positiveCurrent=True,legendList=None,customColors=None,):
+def plotManyPUNDs(dfss: list[list[pd.DataFrame]],title,positiveCurrent=True,legendList=None,customColors=[]):
     """Plots many PUNDs at the same time.
 
     Args:
@@ -924,7 +924,7 @@ def plotManyPUNDs(dfss: list[list[pd.DataFrame]],title,positiveCurrent=True,lege
         
         P, N = dfs
         
-        if customColors != None:
+        if len(customColors) > 0:
             color = customColors[i]
         else:
             color = colorFader('blue','red',i,totalIndices)
