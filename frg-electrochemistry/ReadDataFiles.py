@@ -695,10 +695,10 @@ def readOCV(filename: str, pH: float, referencePotential: float):
         referencePotential (float): potential of reference electrode vs. SHE in V
 
     Returns:
-        pd.DataFrame: Contains 'mode', 'error', 'Ewe/V', 'Ece/V', 'Analog IN 2/V', 'Ewe/mV'
+        pd.DataFrame: Contains 'mode', 'error', 'time/s, 'Ewe/V', 'Ece/V', 'Analog IN 2/V', 'Ewe-Ece/V'
     """
     #finds number of header lines
-    with open(filename, 'r') as file:
+    with open(filename, 'r', encoding='windows-1252') as file:
         file.readline()
         line = file.readline()
         numHeaderLines = int(re.findall(r'-?\d*\.?\d+', line)[0])
