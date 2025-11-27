@@ -212,7 +212,8 @@ def plotManyDRTs(eisDatas: list[pd.DataFrame],
                  legendList: list[str] = None,
                  logResistance: bool = False,
                  regenerate: bool = False,
-                 debug: bool = False):
+                 debug: bool = False,
+                 plotConfidenceInterval: bool = True):
     """
     Plots many DRTs. Caches per-input EIS file as <same path>.drt (npz payload).
     Cache identity = (normalized DataFrame hash, solver_opts). Fallback = (file size, mtime).
@@ -357,8 +358,9 @@ def plotManyDRTs(eisDatas: list[pd.DataFrame],
             label = legendList[i]
 
         ax.plot(tau_plot, g, color=color, label=label)
-        if glo is not None and ghi is not None:
-            ax.fill_between(tau_plot, glo, ghi, color=color, alpha=0.2, label='_')
+        if plotConfidenceInterval:
+            if glo is not None and ghi is not None:
+                ax.fill_between(tau_plot, glo, ghi, color=color, alpha=0.2, label='_')
 
     ax.legend()
     ax.set(ylabel=r'$\gamma$ ($\Omega$)',

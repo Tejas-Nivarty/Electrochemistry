@@ -723,7 +723,7 @@ def readOCV(filename: str, pH: float, referencePotential: float):
     
     return data
 
-def buildTechniqueList(folder_path: str, techniqueName: str):
+def buildTechniqueList(folder_path: str, techniqueName: str, printOut: bool = True):
     """
     Finds all files of a specific technique from .mpt files in a folder
     and returns them in chronological order (earliest acquisition first). 
@@ -733,7 +733,8 @@ def buildTechniqueList(folder_path: str, techniqueName: str):
         folder_path (str): Path to the folder to search in.
         techniqueName (str): Technique name. Common are 'Cyclic Voltammetry', 
                              'Potentio Electrochemical Impedance Spectroscopy', 
-                             'Chronoamperometry / Chronocoulometry'
+                             'Chronoamperometry / Chronocoulometry', 'Dynamic Chronoamperometry'
+        printOut (bool): if true, prints out list of filenames, if false, doesn't
         
     Returns:
         list[str]: List of full file paths to this technique in the folder, sorted by acquisition time
@@ -747,61 +748,72 @@ def buildTechniqueList(folder_path: str, techniqueName: str):
         print(f"Error: '{folder_path}' does not exist.")
         return matching_files
     
-    # Get all .mpt files in the folder
-    mpt_files = [f for f in os.listdir(folder_path) if f.endswith('.mpt')]
-    
-    if not mpt_files:
-        print(f"No .mpt files found in '{folder_path}'.")
-        return matching_files
-    
-    # Check each file
-    file_info = []  # Will store tuples of (file_path, acquisition_datetime)
-    for filename in mpt_files:
-        file_path = os.path.join(folder_path, filename)
-        try:
-            with open(file_path, 'r', encoding='windows-1252') as file:
-                # Check technique on fourth line
-                lines = file.readlines(1000)
-                #print('hi')
-                #print(len(lines))
-                if len(lines) >= 4:
-                    fourth_line = lines[3]
-                    secondLine = lines[1]
-                    if search_string in fourth_line:
-                        # Look for acquisition date/time line
-                        acquisition_time = None
-                        for line in lines:
-                            if "Acquisition started on :" in line:
-                                # Extract the date/time using regex
-                                date_match = re.search(r'(\d{1,2}/\d{1,2}/\d{4} \d{1,2}:\d{2}:\d{2}\.\d{3})', line)
-                                if date_match:
-                                    date_str = date_match.group(1)
-                                    try:
-                                        # Parse the date/time string
-                                        acquisition_time = datetime.datetime.strptime(date_str, '%m/%d/%Y %H:%M:%S.%f')
-                                        break
-                                    except ValueError:
-                                        # If parsing fails, try alternative format
+    if techniqueName != 'Dynamic Chronoamperometry':
+        # Get all .mpt files in the folder
+        mpt_files = [f for f in os.listdir(folder_path) if f.endswith('.mpt')]
+        
+        if not mpt_files:
+            print(f"No .mpt files found in '{folder_path}'.")
+            return matching_files
+        
+        # Check each file
+        file_info = []  # Will store tuples of (file_path, acquisition_datetime)
+        for filename in mpt_files:
+            file_path = os.path.join(folder_path, filename)
+            try:
+                with open(file_path, 'r', encoding='windows-1252') as file:
+                    # Check technique on fourth line
+                    lines = file.readlines(1000)
+                    #print('hi')
+                    #print(len(lines))
+                    if len(lines) >= 4:
+                        fourth_line = lines[3]
+                        secondLine = lines[1]
+                        if search_string in fourth_line:
+                            # Look for acquisition date/time line
+                            acquisition_time = None
+                            for line in lines:
+                                if "Acquisition started on :" in line:
+                                    # Extract the date/time using regex
+                                    date_match = re.search(r'(\d{1,2}/\d{1,2}/\d{4} \d{1,2}:\d{2}:\d{2}\.\d{3})', line)
+                                    if date_match:
+                                        date_str = date_match.group(1)
                                         try:
-                                            acquisition_time = datetime.datetime.strptime(date_str, '%d/%m/%Y %H:%M:%S.%f')
+                                            # Parse the date/time string
+                                            acquisition_time = datetime.datetime.strptime(date_str, '%m/%d/%Y %H:%M:%S.%f')
                                             break
                                         except ValueError:
-                                            pass
-                        
-                        # If we found a valid acquisition time, add to list
-                        if acquisition_time:
-                            file_info.append((file_path, acquisition_time))
-                        else:
-                            # Fallback to modification time if acquisition time not found
-                            mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
-                            file_info.append((file_path, mod_time))
-                    elif 'Nb header lines : 3' in secondLine: #check if it's EC-Lab Express file meant to be read as a CA
-                        if search_string == 'Chronoamperometry / Chronocoulometry':
-                            # Fallback to modification time if acquisition time not found (no acquisition time in these EC-Lab Express Dynamic CAs)
-                            mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
-                            file_info.append((file_path, mod_time))
-        except Exception as e:
-            print(f"Error reading file {filename}: {e}")
+                                            # If parsing fails, try alternative format
+                                            try:
+                                                acquisition_time = datetime.datetime.strptime(date_str, '%d/%m/%Y %H:%M:%S.%f')
+                                                break
+                                            except ValueError:
+                                                pass
+                            
+                            # If we found a valid acquisition time, add to list
+                            if acquisition_time:
+                                file_info.append((file_path, acquisition_time))
+                            else:
+                                # Fallback to modification time if acquisition time not found
+                                mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+                                file_info.append((file_path, mod_time))
+                        elif 'Nb header lines : 3' in secondLine: #check if it's EC-Lab Express file meant to be read as a CA
+                            if search_string == 'Chronoamperometry / Chronocoulometry':
+                                # Fallback to modification time if acquisition time not found (no acquisition time in these EC-Lab Express Dynamic CAs)
+                                mod_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+                                file_info.append((file_path, mod_time))
+            except Exception as e:
+                print(f"Error reading file {filename}: {e}")
+                
+    else:
+        # Get all .csv files in the folder
+        csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
+        file_info = []  # Will store tuples of (file_path, acquisition_datetime)
+        
+        for filename in csv_files:
+            m = re.match(r"(\d+)_", filename)
+            file_path = os.path.join(folder_path, filename)
+            file_info.append((file_path, int(m.group(1))))
     
     # Sort the matched files by acquisition time (earliest first)
     file_info.sort(key=lambda x: x[1])
@@ -810,9 +822,10 @@ def buildTechniqueList(folder_path: str, techniqueName: str):
     matching_files = [info[0] for info in file_info]
     
     #prints matching_files
-    for i, file in enumerate(matching_files):
-        print(str(i)+' '+file)
-        print('\n')
+    if printOut:
+        for i, file in enumerate(matching_files):
+            print(str(i)+' '+file)
+            print('\n')
     
     return matching_files
 

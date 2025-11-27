@@ -920,6 +920,8 @@ def plotManyPUNDs(dfss: list[list[pd.DataFrame]],title,positiveCurrent=True,lege
     
     totalIndices = len(dfss)
     
+    print('Legend Value, Positive Polarization, Negative Polarization')
+    
     for i, dfs in enumerate(dfss):
         
         P, N = dfs
@@ -939,6 +941,8 @@ def plotManyPUNDs(dfss: list[list[pd.DataFrame]],title,positiveCurrent=True,lege
             ax.plot(N['Time (ms)'],N['Switching Polarization (uC/cm^2)'],color=color,label='_')
         else:
             ax.plot(N['Time (ms)'],-N['Switching Polarization (uC/cm^2)'],color=color,label='_')
+            
+        print(legendItem+', '+str(P['Switching Polarization (uC/cm^2)'].iloc[-1])+', '+str(N['Switching Polarization (uC/cm^2)'].iloc[-1]))
             
         
     ax.set(ylabel=r'FE Switching Polarization $\left(\frac{\mu C}{cm^2_{geo}}\right)$',
