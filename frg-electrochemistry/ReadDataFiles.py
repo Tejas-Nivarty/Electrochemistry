@@ -717,6 +717,9 @@ def readOCV(filename: str, pH: float, referencePotential: float):
                         dtype = np.float64,
                         encoding='windows-1252')
     
+    #cleans data to remove points where Synology interferes with saving data
+    data = data[~((data['time/s'] == 0) & (data['Ewe/V'] == 0))]
+    
     data['Ewe/V'] = data['Ewe/V'] + referencePotential + 0.059*pH
     data['Ece/V'] = data['Ece/V'] + referencePotential + 0.059*pH
     data['Ewe/mV'] = data['Ewe/V']*1000
