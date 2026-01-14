@@ -407,7 +407,7 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
         pH (float): pH of electrolyte for RHE conversion
         area (float): geometric area of electrode in cm^2 for current density
         referencePotential (float): potential of reference electrode vs. SHE in V
-        irange (str): irange of measurement; '2A', '1A', '100mA', '10mA', '1mA' are acceptable
+        irange (str): irange of measurement; '2A', '1A', '100mA', '10mA', '1mA', '100uA', '10uA' are acceptable
         stretch (float, optional): For 1 Hz, typically 4, for 10 Hz, typically 2. Defaults to 1.
         solutionResistance (float, default None): resistance to compensate for in Ohms. will try to find default using pH if not specified
         compensationAmount (float, default 1): amount not compensated by potentiostat
@@ -470,6 +470,10 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
         data['Current (A)'] = data['Current (A)']*0.01
     elif irange == '1mA':
         data['Current (A)'] = data['Current (A)']*0.001
+    elif irange == '100uA':
+        data['Current (A)'] = data['Current (A)']*0.0001
+    elif irange == '10uA':
+        data['Current (A)'] = data['Current (A)']*0.00001
         
     #compensates resistance (for some reason A seems to be much higher than V)
     #data['Voltage (V)'] = data['Voltage (V)'] - (data['Current (A)']*solutionResistance*compensationAmount)
