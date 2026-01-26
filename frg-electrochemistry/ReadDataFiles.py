@@ -433,7 +433,7 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
                        engine='pyarrow',
                        sep=',',
                        names=names,
-                       na_values=['∞'],
+                       na_values=['∞','-∞'],
                        dtype=np.float32,
                        on_bad_lines='skip')
     

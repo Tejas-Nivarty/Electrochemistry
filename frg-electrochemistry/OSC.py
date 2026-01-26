@@ -812,17 +812,22 @@ def predictWaveform(pulse: pd.DataFrame, eisData: pd.DataFrame):
     
     return
 
-def getPUND(df):
+def getPUND(df: pd.DataFrame, frequency: float = None):
     """
 
     Args:
         df (pd.DataFrame): Full PUND dataframe from ReadDataFiles.readOSC()
+        frequency (float): frequency of waveform in Hz, useful for when it needs to be truncated
 
     Returns:
         P, N (pd.Dataframe): up and down polarization dataframes. stored in 'Switching Polarization (uC/cm^2)' column
     """
     # Make a copy to avoid modifying original
     df = df.copy()
+    
+    #below code truncates dataframe to only have one period
+    period_length_in_s = 1/frequency
+    df = df[df['Time (s)'] <= period_length_in_s]
     
     # Calculate how many rows we need to add to make it divisible by 4
     n = len(df)
