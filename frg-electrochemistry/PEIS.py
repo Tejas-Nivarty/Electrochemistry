@@ -36,7 +36,7 @@ def plotOneBode(eisData: pd.DataFrame, title: str):
     
     return (fig, [ax1, ax2])
 
-def plotManyBodes(eisDatas: pd.DataFrame, title: str, legendList: list[str] = [], customColors: list[str] = []):
+def plotManyBodes(eisDatas: list[pd.DataFrame], title: str, legendList: list[str] = [], customColors: list[str] = []):
     
     numberOfPlots = len(eisDatas)
     fig, ax1 = plt.subplots()
@@ -49,7 +49,9 @@ def plotManyBodes(eisDatas: pd.DataFrame, title: str, legendList: list[str] = []
         else:
             color = customColors[i]
             
-        if len(legendList) == 0:
+        if (legendList == None):
+            legendValue = '{:3.0f}'.format(1)+r' $mV_{ref}$'
+        elif (len(legendList) == 0): 
             potential = eisDatas[i]['<Ewe>/V'].mean()*1000
             legendValue = '{:3.0f}'.format(potential)+r' $mV_{ref}$'
         else:
@@ -66,7 +68,9 @@ def plotManyBodes(eisDatas: pd.DataFrame, title: str, legendList: list[str] = []
             ylabel = 'Magnitude ($\Omega$) | Dashed',
             xlabel = 'Frequency (Hz)')
     ax2.set(ylabel = '-Phase (deg) | Solid')
-    plt.legend()
+    
+    if legendList != None:
+        plt.legend()
     
     plt.tight_layout()
     plt.show()
