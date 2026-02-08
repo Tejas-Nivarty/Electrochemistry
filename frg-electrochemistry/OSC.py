@@ -958,6 +958,261 @@ def plotManyPUNDs(dfss: list[list[pd.DataFrame]],title,positiveCurrent=True,lege
     
     return fig, ax
 
+def decode_encoded_number(encoded):
+    """
+    Decode a number encoded in the filename format.
+    
+    Args:
+        encoded: String like "1d000000Ep03" or "p0d65" or "n0d5499999999999999"
+    
+    Returns:
+        Float value, or None if parsing fails
+    
+    Examples:
+        "1d000000Ep03" -> 1.000000E+03 -> 1000.0
+        "p0d65" -> +0.65 -> 0.65
+        "n0d54" -> -0.54 -> -0.54
+    """
+    # Decode the format:
+    # d -> . (decimal point)
+    # p -> + (positive)
+    # n -> - (negative)
+    decoded = encoded.replace('d', '.').replace('p', '+').replace('n', '-')
+    
+    try:
+        return float(decoded)
+    except ValueError:
+        return None
+
+def extract_frequency(filename):
+    """
+    Extract the frequency from a filename with format f_XdXXXXEpXX or f_XdXXXXEnXX.
+    
+    Args:
+        filename: String filename (e.g., "33_CA_PUND_f_1d000000Ep03_...")
+    
+    Returns:
+        The frequency as a float, or None if not found
+        
+    Example:
+        "f_1d000000Ep03" -> 1000.0
+    """
+    match = re.search(r'f_([^_.]+)', filename)
+    
+    if not match:
+        return None
+    
+    encoded = match.group(1)
+    return decode_encoded_number(encoded)
+
+def extract_pulse_width(filename):
+    """
+    Extract the pulse width from a filename with format PW_XdXXXXEpXX or PW_XdXXXXEnXX.
+    
+    Args:
+        filename: String filename
+    
+    Returns:
+        The pulse width as a float, or None if not found
+        
+    Example:
+        "PW_1d000En04" -> 0.0001
+    """
+    match = re.search(r'PW_([^_.]+)', filename)
+    
+    if not match:
+        return None
+    
+    encoded = match.group(1)
+    return decode_encoded_number(encoded)
+
+def extract_mid(filename):
+    """
+    Extract the mid value from a filename with format Mid_pXdXX or Mid_nXdXX.
+    
+    Args:
+        filename: String filename
+    
+    Returns:
+        The mid value as a float, or None if not found
+        
+    Example:
+        "Mid_p0d65" -> 0.65
+    """
+    match = re.search(r'Mid_([^_.]+)', filename)
+    
+    if not match:
+        return None
+    
+    encoded = match.group(1)
+    return decode_encoded_number(encoded)
+
+def extract_max(filename):
+    """
+    Extract the max value from a filename with format Max_pXdXX or Max_nXdXX.
+    
+    Args:
+        filename: String filename
+    
+    Returns:
+        The max value as a float, or None if not found
+        
+    Example:
+        "Max_p1d85" -> 1.85
+    """
+    match = re.search(r'Max_([^_.]+)', filename)
+    
+    if not match:
+        return None
+    
+    encoded = match.group(1)
+    return decode_encoded_number(encoded)
+
+def extract_min(filename):
+    """
+    Extract the min value from a filename with format Min_pXdXX or Min_nXdXX.
+    
+    Args:
+        filename: String filename
+    
+    Returns:
+        The min value as a float, or None if not found
+        
+    Example:
+        "Min_n0d5499999999999999" -> -0.5499999999999999
+    """
+    match = re.search(r'Min_([^_.]+)', filename)
+    
+    if not match:
+        return None
+    
+    encoded = match.group(1)
+    return decode_encoded_number(encoded)
+
+def extract_leading_number(filename):
+    """
+    Extract the leading number from a filename.
+    
+    Args:
+        filename: String filename (e.g., "33_CA_PUND_f_1d000000Ep03.csv")
+    
+    Returns:
+        The leading number as a string, or None if no leading number found
+    """
+    match = re.match(r'^(\d+)', filename)
+    return match.group(1) if match else None
+
+def find_i_range_in_mpt(mpt_filepath):
+    """
+    Search for the I Range parameter in an .mpt file without loading entire file.
+    
+    Args:
+        mpt_filepath: Path to the .mpt file
+    
+    Returns:
+        The I Range value as a string (e.g., '100 mA', '100 uA', '1 A'), or None if not found
+    """
+    try:
+        with open(mpt_filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                # Look for lines that start with "I Range" (possibly with leading whitespace)
+                if line.strip().startswith('I Range') and \
+                   not line.strip().startswith('I Range min') and \
+                   not line.strip().startswith('I Range max') and \
+                   not line.strip().startswith('I Range init'):
+                    # Extract the value after "I Range"
+                    # Format is typically: "I Range             100 mA"
+                    parts = line.split('I Range', 1)
+                    if len(parts) > 1:
+                        value = parts[1].strip()
+                        return value
+    except Exception as e:
+        print(f"Error reading {mpt_filepath}: {e}")
+        return None
+    
+    return None
+
+def extract_osc_params(csv_filepath, folder_path):
+    """
+    Get the I Range and all oscillation parameters from the filename and corresponding .mpt file.
+    
+    Args:
+        csv_filepath: Path to the CSV file (e.g., "/path/to/33_file.csv" or just "33_file.csv")
+        folder_path: Path to the folder containing the .mpt files
+    
+    Returns:
+        Dictionary with the following keys:
+        {
+            'i_range': str (e.g., '100mA', '100uA', '1A') or None,
+            'frequency': float (e.g., 1000.0) or None,
+            'pulse_width': float (e.g., 0.0001) or None,
+            'mid': float (e.g., 0.65) or None,
+            'max': float (e.g., 1.85) or None,
+            'min': float (e.g., -0.55) or None
+        }
+    """
+    # Extract just the filename if a full path was provided
+    csv_filename = Path(csv_filepath).name
+    
+    # Extract the leading number from the CSV filename
+    leading_number = extract_leading_number(csv_filename)
+    
+    if leading_number is None:
+        print(f"Warning: No leading number found in '{csv_filename}'")
+        return {
+            'i_range': None,
+            'frequency': None,
+            'pulse_width': None,
+            'mid': None,
+            'max': None,
+            'min': None
+        }
+    
+    # Extract all parameters from the CSV filename
+    frequency = extract_frequency(csv_filename)
+    pulse_width = extract_pulse_width(csv_filename)
+    mid = extract_mid(csv_filename)
+    max_val = extract_max(csv_filename)
+    min_val = extract_min(csv_filename)
+    
+    # Look for matching .mpt file(s) in the folder
+    folder = Path(folder_path)
+    pattern = f"{leading_number}_*.mpt"
+    mpt_files = list(folder.glob(pattern))
+    
+    if not mpt_files:
+        print(f"Warning: No matching .mpt files found for '{csv_filename}' (looking for {pattern})")
+        return {
+            'i_range': None,
+            'frequency': frequency,
+            'pulse_width': pulse_width,
+            'mid': mid,
+            'max': max_val,
+            'min': min_val
+        }
+    
+    # If multiple .mpt files match, use the first one
+    mpt_file = mpt_files[0]
+    
+    if len(mpt_files) > 1:
+        print(f"Info: Multiple .mpt files found for '{csv_filename}', using {mpt_file.name}")
+    
+    # Find the I Range
+    i_range = find_i_range_in_mpt(mpt_file)
+    
+    # Remove spaces from I Range
+    if i_range:
+        i_range = ''.join(i_range.split())
+    
+    return {
+        'i_range': i_range,
+        'frequency': frequency,
+        'pulse_width': pulse_width,
+        'mid': mid,
+        'max': max_val,
+        'min': min_val
+    }
+
 #if you would like to use CLI to analyze a waveform can do it
 if __name__ == '__main__':
     
