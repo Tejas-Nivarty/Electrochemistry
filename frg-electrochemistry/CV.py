@@ -66,6 +66,7 @@ def plotManyCVs(dataList: list[pd.DataFrame], title: str, legendList: list[str] 
         ax.axhline(0,color='k')
     if verticalLine:
         ax.axvline(0,color='k')
+        ax.axvline(1233,color='k')
         
     for i in range(numFiles):
         
