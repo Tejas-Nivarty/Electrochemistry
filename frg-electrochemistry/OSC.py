@@ -960,6 +960,84 @@ def plotManyPUNDs(dfss: list[list[pd.DataFrame]],title,positiveCurrent=True,lege
     
     return fig, ax
 
+def plotOnePUNDTriangle(dfs: list[pd.DataFrame], title: str):
+    """Plots one PUND to debug.
+
+    Args:
+        dfs (list[pd.DataFrame]): List of P and N dataframes with FE switching polarization columns from getPUND
+        title (str): Title of the plot.
+
+    Returns:
+        (fig, ax): matplotlib figure and axes
+    """
+    #unpacks output of getPUND
+    P, N = dfs
+    
+    #uses P and N to plot voltage vs. polarization graph    
+    fig, ax = plt.subplots()
+    
+    ax.plot(P['Voltage (V)'],P['Switching Polarization (uC/cm^2)'],color='red')
+    ax.plot(N['Voltage (V)'],N['Switching Polarization (uC/cm^2)'],color='k')
+    
+    ax.set(ylabel=r'Polarization $\left(\frac{\mu C}{cm^2_{geo}}\right)$',
+           title=title,
+           xlabel=r'Voltage ($V_{RHE}$)')
+    plt.tight_layout()
+    plt.show()
+    
+    return fig, ax
+
+def plotManyPUNDTriangles(dfss: list[list[pd.DataFrame]],title,positiveCurrent=True,legendList=None,customColors=[]):
+    """Plots many PUNDs at the same time.
+
+    Args:
+        dfss (listlist[[pd.DataFrame]]): List of list of P and N dataframes with FE switching polarization columns from getPUND formatted into a list.
+        title (str): Title of the plot.
+        positiveCurrent (bool, optional): Whether current of N is positive or negative. Defaults to True.
+        legendList (list[str], optional): What to put in legend, same order as dfss. Defaults to None.
+        customColors (list[str], optional): List of custom colors to plot. Defaults to None.
+
+    Returns:
+        fig, ax: matplotlib fig and ax
+    """
+    fig, ax = plt.subplots()
+    
+    totalIndices = len(dfss)
+    
+    print('Legend Value, Positive Polarization, Negative Polarization\n')
+    
+    
+    for i, dfs in enumerate(dfss):
+        
+        P, N = dfs
+        
+        if len(customColors) > 0:
+            color = customColors[i]
+        else:
+            color = colorFader('blue','red',i,totalIndices)
+            
+        if legendList != None:
+            legendItem = legendList[i]
+        else:
+            legendItem= '_'
+            
+        ax.plot(P['Voltage (V)'],P['Switching Polarization (uC/cm^2)'],color=color,label=legendItem)
+        ax.plot(N['Voltage (V)'],N['Switching Polarization (uC/cm^2)'],color=color,label='_')
+            
+        print(legendItem+', '+str(P['Switching Polarization (uC/cm^2)'].iloc[-1])+', '+str(N['Switching Polarization (uC/cm^2)'].iloc[-1])+'\n')
+            
+        
+    ax.set(ylabel=r'Polarization $\left(\frac{\mu C}{cm^2_{geo}}\right)$',
+           title=title,
+           xlabel=r'Voltage ($V_{RHE}$)')
+    plt.tight_layout()
+            
+    ax.legend()
+    
+    plt.show()
+    
+    return fig, ax 
+
 def decode_encoded_number(encoded):
     """
     Decode a number encoded in the filename format.
