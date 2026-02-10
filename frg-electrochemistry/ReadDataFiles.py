@@ -128,10 +128,7 @@ def buildEDLCList(folderName: str, number: int, pH: float, area: float, referenc
     Returns:
         list[pd.DataFrame]: List of CVs for EDLC
     """
-    twoDigit = False
-    number = str(number)
-    if len(number) == 2:
-        twoDigit = True
+    prefix = str(number) + '_'
     
     if not os.path.isdir(folderName):
         return None
@@ -139,11 +136,7 @@ def buildEDLCList(folderName: str, number: int, pH: float, area: float, referenc
     files = os.listdir(folderName)
     edlcFiles = []
     for file in files:
-        isEDLC = False
-        if twoDigit and (file[:2] == number):
-            isEDLC = True
-        elif (not twoDigit) and (file[0] == number):
-            isEDLC = True
+        isEDLC = file.startswith(prefix)
         if (file[-3:] != 'txt') and (file[-3:] != 'mpt'):
             isEDLC = False
         if ('CA' in file) or ('WAIT' in file) or ('OCV' in file):
@@ -157,7 +150,7 @@ def buildEDLCList(folderName: str, number: int, pH: float, area: float, referenc
     base_mpt = {f[:-4] for f in edlcFiles if f.endswith('.mpt')}
     cleaned_list = [f for f in edlcFiles if not (f.endswith('.txt') and f[:-4] in base_mpt)]
 
-    return buildCVList(cleaned_list,pH,area,referencePotential)
+    return buildCVList(cleaned_list, pH, area, referencePotential)
 
 def readCA(filename: str, pH: float, area: float, referencePotential: float, shouldRemoveNoise: bool = False, compensationAmount: float = 0.15): #area is in cm^2
     """Reads chronoamperometry data from Biologic into pandas dataframe.
