@@ -36,7 +36,7 @@ def plotOneBode(eisData: pd.DataFrame, title: str):
     
     return (fig, [ax1, ax2])
 
-def plotManyBodes(eisDatas: list[pd.DataFrame], title: str, legendList: list[str] = [], customColors: list[str] = []):
+def plotManyBodes(eisDatas: list[pd.DataFrame], title: str, legendList: list[str] = None, customColors: list[str] = []):
     
     numberOfPlots = len(eisDatas)
     fig, ax1 = plt.subplots()
@@ -49,9 +49,9 @@ def plotManyBodes(eisDatas: list[pd.DataFrame], title: str, legendList: list[str
         else:
             color = customColors[i]
             
-        if (legendList == None):
+        if (legendList == False):
             legendValue = '{:3.0f}'.format(1)+r' $mV_{ref}$'
-        elif (len(legendList) == 0): 
+        elif legendList == None: 
             potential = eisDatas[i]['<Ewe>/V'].mean()*1000
             legendValue = '{:3.0f}'.format(potential)+r' $mV_{ref}$'
         else:
@@ -69,7 +69,7 @@ def plotManyBodes(eisDatas: list[pd.DataFrame], title: str, legendList: list[str
             xlabel = 'Frequency (Hz)')
     ax2.set(ylabel = '-Phase (deg) | Solid')
     
-    if legendList != None:
+    if legendList != False:
         plt.legend()
     
     plt.tight_layout()
@@ -121,7 +121,7 @@ def plotManyNyquists(eisDatas: list[pd.DataFrame], title: str, fitModel: bool = 
         circuitString (str, optional): Description of circuit model. See impedance.py docs for more details. Defaults to None.
         initialGuess (list[float], optional): Initial guess of circuit model parameters. Defaults to [].
         bounds (tuple[list[float]], optional): Bounds of circuit model parameters (lower bounds, upper bounds). Defaults to ([],[]).
-        legendList (list[str], optional): List of legend objects. Defaults to None and plots potentials at which EIS was taken.
+        legendList (list[str], optional): List of legend objects. Defaults to None and plots potentials at which EIS was taken. If False, does not plot a legend, useful for large number of plots.
 
     Returns:
         list[impedance.models.circuits.CustomCircuit]: List of fitted circuits. None if fitModel = False.
@@ -149,7 +149,9 @@ def plotManyNyquists(eisDatas: list[pd.DataFrame], title: str, fitModel: bool = 
         
         #plots results
         color = colorFader('blue','red',i,numberOfPlots)
-        if legendList != None:
+        if legendList == False:
+            ax.plot(Z.real,-Z.imag,'o--',color=color,label='_')
+        elif legendList != None:
             ax.plot(Z.real,-Z.imag,'o--',color=color,label=legendList[i])
         else:
             #finds potential at which EIS was taken
@@ -163,7 +165,9 @@ def plotManyNyquists(eisDatas: list[pd.DataFrame], title: str, fitModel: bool = 
            ylabel = '-Im(Z(f)) ($\Omega$)')
     
     plt.axis('square')
-    ax.legend()
+    
+    if legendList != False:
+        ax.legend()
     
     plt.tight_layout()
     plt.show()
