@@ -1193,7 +1193,7 @@ def find_i_range_in_mpt(mpt_filepath):
         The I Range value as a string (e.g., '100 mA', '100 uA', '1 A'), or None if not found
     """
     try:
-        with open(mpt_filepath, 'r', encoding='utf-8', errors='ignore') as f:
+        with open(mpt_filepath, 'r', encoding='windows-1252', errors='ignore') as f:
             for line in f:
                 # Look for lines that start with "I Range" (possibly with leading whitespace)
                 if line.strip().startswith('I Range') and \

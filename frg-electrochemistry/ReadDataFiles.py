@@ -463,9 +463,9 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
         data['Current (A)'] = data['Current (A)']*0.01
     elif irange == '1mA':
         data['Current (A)'] = data['Current (A)']*0.001
-    elif irange == '100uA':
+    elif (irange == '100uA') or (irange == '100µA'):
         data['Current (A)'] = data['Current (A)']*0.0001
-    elif irange == '10uA':
+    elif (irange == '10uA') or (irange == '10µA'):
         data['Current (A)'] = data['Current (A)']*0.00001
         
     #compensates resistance (for some reason A seems to be much higher than V)
