@@ -1218,7 +1218,7 @@ def extract_osc_params(csv_filepath, folder_path):
     
     Args:
         csv_filepath: Path to the CSV file (e.g., "/path/to/33_file.csv" or just "33_file.csv")
-        folder_path: Path to the folder containing the .mpt files
+        folder_path: Path to the folder containing the .mps files
     
     Returns:
         Dictionary with the following keys:
@@ -1257,11 +1257,11 @@ def extract_osc_params(csv_filepath, folder_path):
     
     # Look for matching .mpt file(s) in the folder
     folder = Path(folder_path)
-    pattern = f"{leading_number}_*.mpt"
+    pattern = f"{leading_number}_*.mps"
     mpt_files = list(folder.glob(pattern))
     
     if not mpt_files:
-        print(f"Warning: No matching .mpt files found for '{csv_filename}' (looking for {pattern})")
+        print(f"Warning: No matching .mps files found for '{csv_filename}' (looking for {pattern})")
         return {
             'i_range': None,
             'frequency': frequency,
@@ -1275,7 +1275,7 @@ def extract_osc_params(csv_filepath, folder_path):
     mpt_file = mpt_files[0]
     
     if len(mpt_files) > 1:
-        print(f"Info: Multiple .mpt files found for '{csv_filename}', using {mpt_file.name}")
+        print(f"Info: Multiple .mps files found for '{csv_filename}', using {mpt_file.name}")
     
     # Find the I Range
     i_range = find_i_range_in_mpt(mpt_file)
