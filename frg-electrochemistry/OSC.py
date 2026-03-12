@@ -960,6 +960,65 @@ def plotManyPUNDs(dfss: list[list[pd.DataFrame]],title,positiveCurrent=True,lege
     
     return fig, ax
 
+def plotManyPUNDsFinal(datasets: list[list[list[pd.DataFrame]]], title, positiveCurrent=True,
+                       xValues=None, seriesLabels=None, customColors=[], xlabel='X'):
+    """Plots summary polarization values from one or more series of PUNDs.
+
+    Args:
+        datasets (list[list[list[pd.DataFrame]]]): Outer list = series, middle list = measurements,
+            inner list = [P, N] dataframes.
+        title (str): Title of the plot.
+        positiveCurrent (bool, optional): Whether current of N is positive or negative. Defaults to True.
+        xValues (list[list[float]], optional): X-axis values per series. Defaults to None (uses indices).
+        seriesLabels (list[str], optional): Legend label for each series. Defaults to None.
+        customColors (list[str], optional): Color for each series. Defaults to None.
+        xlabel (str, optional): X-axis label. Defaults to 'X'.
+
+    Returns:
+        fig, ax: matplotlib fig and ax
+    """
+    fig, ax = plt.subplots()
+
+    totalSeries = len(datasets)
+
+    print('Series, X Value, Positive Polarization, Negative Polarization\n')
+
+    for s, series in enumerate(datasets):
+        if len(customColors) > 0:
+            color = customColors[s]
+        else:
+            color = colorFader('blue', 'red', s, totalSeries)
+
+        label = seriesLabels[s] if seriesLabels is not None else f'Series {s}'
+
+        pos_pols = []
+        neg_pols = []
+        x_vals = xValues[s] if xValues is not None else list(range(len(series)))
+
+        for i, dfs in enumerate(series):
+            P, N = dfs
+
+            pos_pol = P['Switching Polarization (uC/cm^2)'].iloc[-1]
+            neg_pol = N['Switching Polarization (uC/cm^2)'].iloc[-1]
+            if not positiveCurrent:
+                neg_pol = -neg_pol
+
+            pos_pols.append(pos_pol)
+            neg_pols.append(neg_pol)
+
+            print(f'{label}, {x_vals[i]}, {pos_pol}, {neg_pol}')
+
+        ax.plot(x_vals, pos_pols, 'o-', color=color, label=label)
+        ax.plot(x_vals, neg_pols, 'o-', color=color, label='_')
+
+    ax.set(ylabel=r'FE Switching Polarization $\left(\frac{\mu C}{cm^2_{geo}}\right)$',
+           xlabel=xlabel,
+           title=title)
+
+    ax.legend()
+
+    return fig, ax
+
 def plotOnePUNDTriangle(dfs: list[pd.DataFrame], title: str):
     """Plots one PUND to debug.
 
