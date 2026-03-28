@@ -454,7 +454,22 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
     else:
         data['Voltage (V)'] = data['ch2Avg']
         data['Current (A)'] = data['ch1Avg']
-    
+        
+    #below code estimates the picoscope range used for current to subtract offsets
+    max_current_voltage = data['Current (A)'].abs().max()
+    if max_current_voltage >= 5:
+        data['Current (A)'] -= 14.1/1000
+    elif max_current_voltage >= 2:
+        data['Current (A)'] -= 4.58/1000
+    elif max_current_voltage >= 1:
+        data['Current (A)'] -= 4.43/1000
+    elif max_current_voltage >= 0.5:
+        data['Current (A)'] -= 2.73/1000
+    elif max_current_voltage >= 0.2:
+        data['Current (A)'] -= 1.95/1000
+    else:
+        print('WARNING: Likely used small Picoscope range.')
+        
     if irange == '1A' or irange == '2A':
         data['Current (A)'] = data['Current (A)']
     elif irange == '100mA':
