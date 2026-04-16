@@ -36,6 +36,77 @@ def plotOneBode(eisData: pd.DataFrame, title: str):
     
     return (fig, [ax1, ax2])
 
+def plotManyDielectrics(eisDatas: list[pd.DataFrame], title: str, d: float, A: float, legendList: list[str] = None, customColors: list[str] = []):
+    """
+    Converts Bode plot impedance data to dielectric constant and plots vs frequency.
+
+    k = d / (2π * ε₀ * A * |Z| * f)
+
+    Parameters
+    ----------
+    eisDatas : list[pd.DataFrame]
+        List of EIS DataFrames with columns 'freq/Hz', '|Z|/Ohm', 'Phase(Z)/deg', '<Ewe>/V'.
+    title : str
+        Plot title.
+    d : float
+        Film thickness in nanometers (nm).
+    A : float
+        Electrode area in square centimeters (cm²).
+    legendList : list[str], optional
+        Custom legend labels. None = auto from potential, False = no legend.
+    customColors : list[str], optional
+        Custom color list for each dataset.
+    """
+
+    epsilon_0 = 8.854187817e-12  # F/m
+
+    d_m = d * 1e-9     # nm -> m
+    A_m2 = A * 1e-4    # cm^2 -> m^2
+
+    numberOfPlots = len(eisDatas)
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+
+    for i, eisData in enumerate(eisDatas):
+
+        if len(customColors) == 0:
+            color = colorFader('blue', 'red', i, numberOfPlots)
+        else:
+            color = customColors[i]
+
+        if legendList == False:
+            legendValue = '{:3.0f}'.format(1) + r' $mV_{ref}$'
+        elif legendList is None:
+            potential = eisDatas[i]['<Ewe>/V'].mean() * 1000
+            legendValue = '{:3.0f}'.format(potential) + r' $mV_{ref}$'
+        else:
+            legendValue = legendList[i]
+
+        freq = eisData['freq/Hz']
+        Z_mag = eisData['|Z|/Ohm']
+
+        k = d_m / (2 * np.pi * epsilon_0 * A_m2 * Z_mag * freq)
+
+        ax1.plot(freq, k, color=color, label='_', linestyle='dashed')
+        ax2.plot(freq, -eisData['Phase(Z)/deg'], color=color, label=legendValue, linestyle='solid')
+
+    ax1.axhline(y=1, color='black', linestyle='-', linewidth=0.5)
+
+    ax1.set(xscale='log',
+            yscale='log',
+            title=title,
+            ylabel='Dielectric Constant (κ) | Dashed',
+            xlabel='Frequency (Hz)')
+    ax2.set(ylabel='-Phase (deg) | Solid')
+
+    if legendList != False:
+        plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+    return
+
 def plotManyBodes(eisDatas: list[pd.DataFrame], title: str, legendList: list[str] = None, customColors: list[str] = []):
     
     numberOfPlots = len(eisDatas)
