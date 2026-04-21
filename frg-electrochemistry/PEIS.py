@@ -90,7 +90,8 @@ def plotManyDielectrics(eisDatas: list[pd.DataFrame], title: str, d: float, A: f
         ax1.plot(freq, k, color=color, label='_', linestyle='dashed')
         ax2.plot(freq, -eisData['Phase(Z)/deg'], color=color, label=legendValue, linestyle='solid')
 
-    ax1.axhline(y=1, color='black', linestyle='-', linewidth=0.5)
+    ax1.axhline(y=1, color='black', linestyle='-')
+    ax2.axhline(y=0, color='black', linestyle='-')
 
     ax1.set(xscale='log',
             yscale='log',
