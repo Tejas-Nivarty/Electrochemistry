@@ -588,7 +588,7 @@ def readOSC(filename: str,pH: float, area: float, referencePotential: float, ira
         data['Current (A)'] = data['Current (A)']*0.00001
         
     #compensates resistance (for some reason A seems to be much higher than V)
-    #data['Voltage (V)'] = data['Voltage (V)'] - (data['Current (A)']*solutionResistance*compensationAmount)
+    data['Voltage (V)'] = data['Voltage (V)'] - (data['Current (A)']*solutionResistance*compensationAmount)
     
     #does stretch if necessary
     data['Time (ms)'] *= stretch

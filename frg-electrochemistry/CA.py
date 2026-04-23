@@ -147,7 +147,7 @@ def integrateCA(caDatas: list[pd.DataFrame]):
         
     return molesList
 
-def plotH2CA(h2List,electronList,title,labels=None):
+def plotH2CA(h2List, electronList, title, labels=None):
     """Plots integrated CA charge and H2 generated.
 
     Args:
@@ -155,31 +155,31 @@ def plotH2CA(h2List,electronList,title,labels=None):
         electronList (list[tuple[float,float]]): Dictionary from integrateCA. Must match order of h2Dict.
         title (str): Graph title.
         labels (list[str]): X-axis labels for experiments. Default None.
-        
+
     Returns:
         tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
     """
-    
+
     h2prodList = []
     h2errList = []
     chargeList = []
     fig, ax = plt.subplots()
-    
+
     for i, electronTuple in enumerate(electronList):
-        
+
         h2prod, h2err = h2List[i]
         charge, time = electronTuple
-        
-        h2prod = h2prod*1E9/time #nmol/s/cm^2
-        h2err = h2err*1E9/time #nmol/s/cm^2
-        charge = abs(charge*1E9/time/2) #nmol/s/cm^2, charge divided by 2 for stoich
-        
+
+        h2prod = h2prod*1E9/time  # nmol/s/cm^2
+        h2err = h2err*1E9/time    # nmol/s/cm^2
+        charge = abs(charge*1E9/time/2)  # nmol/s/cm^2, charge divided by 2 for stoich
+
         h2prodList.append(h2prod)
         h2errList.append(h2err)
         chargeList.append(charge)
-        
+
     xList = [i+1 for i in range(len(electronList))]
-    
+
     ax.errorbar(xList,
                 h2prodList,
                 yerr=h2errList,
@@ -189,24 +189,35 @@ def plotH2CA(h2List,electronList,title,labels=None):
                 capthick=1,
                 label=r'$H_2$ Generated')
     ax.scatter(xList,
-               chargeList, 
-               color='goldenrod', 
+               chargeList,
+               color='goldenrod',
                label=r'$\frac{1}{2}e^-$ Transferred')
-    
+
     if labels != None:
-        ax.set(title = title,
-            ylabel = r'Mole Flux ($\frac{nmol}{cm^2\cdot s}$)',
-            xticks = xList,
-            xticklabels = labels,
-            ylim = [0,ax.get_ylim()[1]])
+        ax.set(title=title,
+               ylabel=r'Mole Flux ($\frac{nmol}{cm^2\cdot s}$)',
+               xticks=xList,
+               xticklabels=labels,
+               ylim=[0, ax.get_ylim()[1]])
     else:
-        ax.set(title = title,
-            ylabel = r'Mole Flux ($\frac{nmol}{cm^2\cdot s}$)',
-            ylim = [0,ax.get_ylim()[1]])
-        
+        ax.set(title=title,
+               ylabel=r'Mole Flux ($\frac{nmol}{cm^2\cdot s}$)',
+               ylim=[0, ax.get_ylim()[1]])
+
+    # Secondary y-axis in mA/cm^2
+    # Both series are on a (1/2)e- scale in nmol/(cm^2*s); converting to current density
+    # uses 2 electrons per H2: j [mA/cm^2] = flux [nmol/(cm^2*s)] * 2 * F * 1e-9 * 1000
+    faradayConstant = 9.648533212331E4  # C/mol
+    nmol_to_mAcm2 = 2 * faradayConstant * 1e-9 * 1000  # ~0.19297
+
+    ax2 = ax.secondary_yaxis('right',
+                             functions=(lambda y: y * nmol_to_mAcm2,
+                                        lambda y: y / nmol_to_mAcm2))
+    ax2.set_ylabel(r'Current Density $\left(\frac{mA}{cm^2_{geo}}\right)$')
+
     ax.legend()
-    
+
     plt.tight_layout()
     plt.show()
-    
+
     return (fig, ax)
