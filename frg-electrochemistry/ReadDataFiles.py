@@ -6,6 +6,110 @@ import re
 import os
 import datetime
 
+def readCP(filename: str, pH: float, area: float, referencePotential: float, compensationAmount: float = 0.15, solutionResistance: float = None):
+    """Reads cyclic voltammetry data from Biologic into Pandas dataframe.
+
+    Args:
+        filename (str): filename of CP .mpt from biologic
+        pH (float): pH of electrolyte for RHE conversion
+        area (float): geometric area of electrode in cm^2 for current density
+        referencePotential (float): potential of reference electrode vs. SHE in V
+        compensationAmount (float, default 0.15): amount not compensated by potentiostat
+        solutionResistance (float, default None): set this to custom value and compensationAmount to 1 to override what was done experimentally
+
+    Returns:
+        pd.DataFrame: dataframe of CP data
+    """
+    
+    #finds number of header lines and whether it's one of pedram's files
+    with open(filename, 'r', encoding='windows-1252') as file:
+        file.readline()
+        line = file.readline()
+        numHeaderLines = int(re.findall(r'-?\d*\.?\d+', line)[0])
+        
+        headers = []
+        
+        #finds headers in file
+        file.seek(0)
+        currLine = 1
+        for line in file:
+            if currLine == numHeaderLines:
+                headers = line.strip().split('\t')
+            currLine += 1
+            
+    data = pd.read_csv(filename,
+                    sep='\s+',
+                    skiprows=numHeaderLines,
+                    names = headers,
+                    index_col=False,
+                    dtype = np.float64,
+                    encoding='windows-1252')
+    
+    if '<I>/mA' in data.columns:
+        data['I/mA'] = data['<I>/mA']
+    if '<Ewe>/V' in data.columns:
+        data['Ewe/V'] = data['<Ewe>/V']
+    if '<Ewe/V>' in data.columns:
+        data['Ewe/V'] = data['<Ewe/V>']
+    
+    if solutionResistance == None:
+        if 'Rcmp/Ohm' in data.columns:
+            solutionResistance = data['Rcmp/Ohm'].mean()
+        else:
+            if pH == 13:
+                solutionResistance = 45
+                print('could not find Rs, defaulting to 45')
+            else: #pH 14 usually
+                solutionResistance = 5
+                print('could not find Rs, defaulting to 45')
+                
+        data['Ewe/V'] = data['Ewe/V'] - (data['I/mA']*0.001*solutionResistance*compensationAmount)
+    else:
+        if 'Rcmp/Ohm' in data.columns:
+            solutionResistancePrev = data['Rcmp/Ohm'].mean()
+        else:
+            if pH == 13:
+                solutionResistancePrev = 45
+                print('could not find Rs, defaulting to 45')
+            else: #pH 14 usually
+                solutionResistancePrev = 5
+                print('could not find Rs, defaulting to 45')
+        data['Ewe/V'] = data['Ewe/V'] + (data['I/mA']*0.001*solutionResistancePrev*0.85)
+        data['Ewe/V'] = data['Ewe/V'] - (data['I/mA']*0.001*solutionResistance*compensationAmount)
+
+    data['j/mA*cm-2'] = data['I/mA']/area
+    data['Ewe/V'] = data['Ewe/V'] + referencePotential + 0.059*pH
+    data['Ewe/mV'] = data['Ewe/V']*1000
+    data['j/A*m-2'] = data['j/mA*cm-2']*10
+    
+    #cleans data to remove points where Synology interferes with saving data
+    data = data[~((data['time/s'] == 0) & (data['I/mA'] == 0))]
+    
+    return data
+
+def buildCPList(filenameList: list[str], pH: float, area: float, referencePotential: float, compensationAmount: float = 0.15, solutionResistance: float = None):
+    """Takes list of filenames with same pH, area, and referencePotential and builds CP list.
+
+    Args:
+        filenameList (list[str]): List of filenames to read CVs from.
+        pH (float): pH of electrolyte for RHE conversion
+        area (float): geometric area of electrode in cm^2 for current density
+        referencePotential (float): potential of reference electrode vs. SHE in V
+        compensationAmount (float, default 0.15): amount not compensated by potentiostat
+        solutionResistance (float, default None): set this to custom value and compensationAmount to 1 to override what was done experimentally
+
+
+    Returns:
+        list[pd.DataFrame]: List of DataFrames containing CV data.
+    """
+    dataList = []
+    
+    for filename in filenameList:
+        data = readCP(filename,pH,area,referencePotential,compensationAmount,solutionResistance)
+        dataList.append(data)
+    
+    return dataList
+
 def readCV(filename: str, pH: float, area: float, referencePotential: float, compensationAmount: float = 0.15):
     """Reads cyclic voltammetry data from Biologic into Pandas dataframe.
 
@@ -36,7 +140,7 @@ def readCV(filename: str, pH: float, area: float, referencePotential: float, com
                 if currLine == numHeaderLines:
                     headers = line.strip().split('\t')
                 currLine += 1
-
+                
         data = pd.read_csv(filename,
                         sep='\s+',
                         skiprows=numHeaderLines,
@@ -149,7 +253,7 @@ def buildEDLCList(folderName: str, number: int, pH: float, area: float, referenc
         
     base_mpt = {f[:-4] for f in edlcFiles if f.endswith('.mpt')}
     cleaned_list = [f for f in edlcFiles if not (f.endswith('.txt') and f[:-4] in base_mpt)]
-
+    
     return buildCVList(cleaned_list, pH, area, referencePotential)
 
 def readCA(filename: str, pH: float, area: float, referencePotential: float, shouldRemoveNoise: bool = False, compensationAmount: float = 0.15): #area is in cm^2

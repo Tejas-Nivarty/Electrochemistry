@@ -25,12 +25,10 @@ def getTafel(caList: list[pd.DataFrame]):
         timeToExclude = totalTime*exclusionPercent
         dataSlice = data[data['time/s'] > (data['time/s'].iloc[0] + timeToExclude)]
         try:
-            logCurrentDensityList.append(log10(-dataSlice['j/mA*cm-2'].mean())) #prevents faulty values 
+            logCurrentDensityList.append(log10(-dataSlice['j/mA*cm-2'].mean())) #prevents faulty values
+            overpotentialList.append(thermodynamicPotential-dataSlice['Ewe/mV'].mean()) 
         except ValueError:
             continue
-        overpotentialList.append(thermodynamicPotential-dataSlice['Ewe/mV'].mean())
-        
-            
         
     linearRegression = linregress(logCurrentDensityList,overpotentialList)
 
