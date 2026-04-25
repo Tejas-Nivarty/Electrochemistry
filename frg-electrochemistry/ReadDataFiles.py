@@ -250,7 +250,8 @@ def buildEDLCList(folderName: str, number: int, pH: float, area: float, referenc
 
     Args:
         folderName (str): Folder that EDLC CVs are located in.
-        number (int): Number that EDLC CVs all start with in common.
+        number (int): Number that EDLC CVs all start with in common. Matches any
+            leading-zero variant (e.g. number=5 matches '5_', '05_', '005_').
         pH (float): pH that EDLC was taken at.
         area (float): Area of electrode for EDLC in cm^2.
         referencePotential (float): Potential of reference electrode
@@ -260,15 +261,14 @@ def buildEDLCList(folderName: str, number: int, pH: float, area: float, referenc
     Returns:
         list[pd.DataFrame]: List of CVs for EDLC
     """
-    prefix = str(number) + '_'
-
     if not os.path.isdir(folderName):
         return None
 
     files = os.listdir(folderName)
     edlcFiles = []
     for file in files:
-        isEDLC = file.startswith(prefix)
+        m = re.match(r'^(\d+)_', file)
+        isEDLC = m is not None and int(m.group(1)) == number
         if (file[-3:] != 'txt') and (file[-3:] != 'mpt'):
             isEDLC = False
         if ('CA' in file) or ('WAIT' in file) or ('OCV' in file):

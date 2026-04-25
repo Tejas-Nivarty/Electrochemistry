@@ -122,6 +122,47 @@ def plotManyCAs(caDatas: list[pd.DataFrame], title: str, legendList: list[str] =
 
     return (fig, ax)
 
+def plotManyCPs(cp_datas: list[pd.DataFrame], title: str, labels: list[str] = False):
+    """Plots multiple CPs.
+
+    Args:
+        cp_datas (list[pd.DataFrame]): List of pandas DataFrames of CPs.
+        title (str): Title of plot.
+        labels (list[str], optional): Legend labels. Defaults to False and plots current, set to None if no legend is desired.
+
+    Returns:
+        tuple(matplotlib.figure.Figure,list[matplotlib.axes._axes.Axes]): fig and ax for further customization if necessary
+    """
+    
+    fig, ax = plt.subplots()
+    
+    for (i, data) in enumerate(cp_datas):
+        
+        color = colorFader('blue','red',i,len(cp_datas))
+        
+        if labels == False:
+            current_density = data['j/mA*cm-2'].mean()
+            label = '{:1.3f}'.format(current_density) + r' $\frac{mA}{cm^2_{geo}}$'
+        elif labels == None:
+            label = '_'
+        else:
+            label = labels[i]
+            
+        ax.plot(data['time/s'],
+                data['Ewe/V'],
+                color=color,
+                label=label)
+        
+    ax.set(title=title,
+           ylabel = r'Voltage ($V_{RHE}$)',
+           xlabel = 'Time (s)')
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
+    
+    
+    return (fig, ax)
+
 def integrateCA(caDatas: list[pd.DataFrame]):
     """Integrates CA data to find total charge transferred.
 
