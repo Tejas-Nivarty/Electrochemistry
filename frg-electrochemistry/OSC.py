@@ -1032,11 +1032,14 @@ def plotOnePUNDTriangle(dfs: list[pd.DataFrame], title: str):
     #unpacks output of getPUND
     P, N = dfs
     
+    #last value of positive polarization, used to offset the negative branch
+    pLast = P['Switching Polarization (uC/cm^2)'].iloc[-1]
+    
     #uses P and N to plot voltage vs. polarization graph    
     fig, ax = plt.subplots()
     
     ax.plot(P['Voltage (V)'],P['Switching Polarization (uC/cm^2)'],color='red')
-    ax.plot(N['Voltage (V)'],N['Switching Polarization (uC/cm^2)'],color='k')
+    ax.plot(N['Voltage (V)'],N['Switching Polarization (uC/cm^2)'] + pLast,color='k')
     
     ax.set(ylabel=r'Polarization $\left(\frac{\mu C}{cm^2_{geo}}\right)$',
            title=title,
@@ -1070,6 +1073,9 @@ def plotManyPUNDTriangles(dfss: list[list[pd.DataFrame]],title,positiveCurrent=T
         
         P, N = dfs
         
+        #last value of positive polarization, used to offset the negative branch
+        pLast = P['Switching Polarization (uC/cm^2)'].iloc[-1]
+        
         if len(customColors) > 0:
             color = customColors[i]
         else:
@@ -1081,7 +1087,7 @@ def plotManyPUNDTriangles(dfss: list[list[pd.DataFrame]],title,positiveCurrent=T
             legendItem= '_'
             
         ax.plot(P['Voltage (V)'],P['Switching Polarization (uC/cm^2)'],color=color,label=legendItem)
-        ax.plot(N['Voltage (V)'],N['Switching Polarization (uC/cm^2)'],color=color,label='_')
+        ax.plot(N['Voltage (V)'],N['Switching Polarization (uC/cm^2)'] + pLast,color=color,label='_')
             
         print(legendItem+', '+str(P['Switching Polarization (uC/cm^2)'].iloc[-1])+', '+str(N['Switching Polarization (uC/cm^2)'].iloc[-1])+'\n')
             
@@ -1095,7 +1101,7 @@ def plotManyPUNDTriangles(dfss: list[list[pd.DataFrame]],title,positiveCurrent=T
     
     plt.show()
     
-    return fig, ax 
+    return fig, ax
 
 def decode_encoded_number(encoded):
     """

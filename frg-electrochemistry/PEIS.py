@@ -36,7 +36,7 @@ def plotOneBode(eisData: pd.DataFrame, title: str):
     
     return (fig, [ax1, ax2])
 
-def plotManyDielectrics(eisDatas: list[pd.DataFrame], title: str, d: float, A: float, legendList: list[str] = None, customColors: list[str] = []):
+def plotManyDielectrics(eisDatas: list[pd.DataFrame], title: str, d: float, A: float | list[float], legendList: list[str] = None, customColors: list[str] = []):
     """
     Converts Bode plot impedance data to dielectric constant and plots vs frequency.
 
@@ -50,8 +50,10 @@ def plotManyDielectrics(eisDatas: list[pd.DataFrame], title: str, d: float, A: f
         Plot title.
     d : float
         Film thickness in nanometers (nm).
-    A : float
-        Electrode area in square centimeters (cm²).
+    A : float or list[float]
+        Electrode area in square centimeters (cm²). Pass a single float to use the
+        same area for all datasets, or a list of floats (one per dataset) to use
+        a different area for each.
     legendList : list[str], optional
         Custom legend labels. None = auto from potential, False = no legend.
     customColors : list[str], optional
@@ -61,13 +63,25 @@ def plotManyDielectrics(eisDatas: list[pd.DataFrame], title: str, d: float, A: f
     epsilon_0 = 8.854187817e-12  # F/m
 
     d_m = d * 1e-9     # nm -> m
-    A_m2 = A * 1e-4    # cm^2 -> m^2
 
     numberOfPlots = len(eisDatas)
+
+    # Normalize A into a list with one entry per dataset
+    if isinstance(A, (list, tuple, np.ndarray)):
+        if len(A) != numberOfPlots:
+            raise ValueError(
+                f"Length of A ({len(A)}) must match number of EIS datasets ({numberOfPlots})."
+            )
+        A_list = list(A)
+    else:
+        A_list = [A] * numberOfPlots
+
     fig, ax1 = plt.subplots()
     ax2 = ax1.twinx()
 
     for i, eisData in enumerate(eisDatas):
+
+        A_m2 = A_list[i] * 1e-4  # cm^2 -> m^2
 
         if len(customColors) == 0:
             color = colorFader('blue', 'red', i, numberOfPlots)
